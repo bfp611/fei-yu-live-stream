@@ -1,0 +1,18 @@
+{
+  "repository": "https://github.com/InariNGT-Ofiicial/jingyu-live2d-agent",
+  "commit": "b5a64a1ab5c6d3f6806795c353158dc006dd1be7",
+  "files": [
+    "web/driver-pipeline.mjs",
+    "web/engine.mjs (sampling functions only)",
+    "web/vendor/pixi.min.js",
+    "web/vendor/cubism4.colors.min.js"
+  ],
+  "excluded": [
+    "models",
+    "Cubism Core",
+    "speechEmotion keyword rules",
+    "touch behavior",
+    "desktop pet",
+    "upstream server/planner and credentials"
+  ]
+}

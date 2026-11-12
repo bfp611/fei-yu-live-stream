@@ -1,0 +1,143 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大肥鱼 · 直播间</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0c172c;color:#edf1ff;font:16px/1.7 system-ui}header{padding:20px 32px;border-bottom:1px solid #30405b}h1{font-size:24px;margin:0}small{color:#b8c5df}main{display:grid;grid-template-columns:1fr 390px;min-height:650px}#stage{position:relative;height:680px;background:radial-gradient(ellipse at center,#294b73,#111e35 75%);overflow:hidden}canvas{position:absolute;inset:0}#subtitle{position:absolute;bottom:28px;left:8%;right:8%;padding:18px 24px;background:#081423d9;border:1px solid #627e9b;border-radius:18px;text-align:center;font-size:21px;z-index:2}aside{padding:24px;background:#111f36}.row{padding:12px;margin:10px 0;border:1px solid #38516f;border-radius:12px;cursor:pointer}.active{border-color:#ecc985;background:#2e3d53}button{background:#d9bd85;color:#13233b;border:0;border-radius:10px;padding:12px 16px;cursor:pointer;font:inherit;margin:5px}button:disabled{opacity:.4;cursor:wait}#state{margin:12px 0;color:#b8d7f7}footer{padding:14px 30px;color:#a7b5cf;font-size:12px}#error{color:#ffb5b5}audio{width:100%;margin-top:16px}@media(max-width:850px){main{grid-template-columns:1fr}#stage{height:560px}}
+textarea{display:block;width:100%;background:#091629;color:#fff;border:1px solid #6781a0;border-radius:10px;padding:12px;font:inherit;margin-top:8px;resize:vertical}#chat-log{max-height:240px;overflow:auto}.message{padding:10px 0;border-bottom:1px solid #30405b;white-space:pre-wrap}details{margin-top:18px}#state,#error{display:block}aside{overflow:auto;max-height:900px}
+.preview header{display:flex;align-items:center;justify-content:space-between;padding:22px 32px;background:#0b2034;border:0}
+.preview header h1{font-size:23px;letter-spacing:3px;color:#f0dfb8}.preview header small{font-size:12px;color:#95cbbf}
+.preview main{margin:0 22px;border:1px solid #617d8b55;border-radius:22px;overflow:hidden;grid-template-columns:minmax(0,1fr) 330px;min-height:640px;background:#10283f}
+.preview #stage{height:640px;background:radial-gradient(ellipse at 50% 25%,#3e687b88,transparent 55%),radial-gradient(ellipse at 15% 100%,#296b7655,transparent 55%),linear-gradient(145deg,#10283f,#1b3a51 60%,#0e233b)}
+.preview #stage:before{content:'筱哲的大肥鱼';position:absolute;top:26px;left:28px;font-size:14px;letter-spacing:5px;color:#f0dfb8}
+.preview #stage:after{content:'一条鱼，和你聊一会儿。';position:absolute;top:56px;left:28px;font-size:12px;color:#a6c0ce}
+.preview #subtitle{bottom:22px;left:5%;right:5%;font-size:18px;line-height:1.7;border-color:#ccb98066;background:#091a2bea;max-height:195px;overflow:auto}
+.preview aside{display:flex;flex-direction:column;background:#0e2236e8;padding:22px;max-height:640px}
+.preview aside:before{content:'鱼塘聊天室';font-size:17px;letter-spacing:2px;color:#e4d3b0;border-bottom:1px solid #e4d3b030;padding-bottom:16px;margin-bottom:10px}
+.preview #chat-log{order:0;max-height:340px;flex:1}.preview #chat-log:empty:before{content:'还没有弹幕。\A 你发一句，她就会回应。';white-space:pre-line;display:block;color:#829fb3;padding-top:22px;font-size:14px;line-height:2}
+.preview .message{font-size:14px;border-color:#abc5dc20;padding:14px 0}.preview #chat-form{order:2;margin-top:12px}.preview #chat-form label{font-size:12px;color:#9cb6c9}.preview textarea{font-size:14px;min-height:76px;resize:none;border-color:#67818f66}.preview button{font-size:13px;padding:9px 13px}.preview #state,.preview #error{order:1;font-size:12px}.preview #audio{order:3;height:30px}.preview #stop{order:4;align-self:flex-end}.preview aside details,.preview aside>small{display:none}
+.preview footer{font-size:11px;line-height:1.8;color:#7895aa}.preview #new-chat{background:#284258;color:#cfdeeb}
+@media(max-width:720px){.preview main{grid-template-columns:1fr;margin:0 10px}.preview #stage{height:520px}.preview aside{min-height:380px}.preview header{display:block;padding:18px}.preview header h1{font-size:20px}}
+.preview.real-chat aside:before{content:'鱼塘聊天室 · 真实弹幕'}
+.output{height:100vh;overflow:hidden}.output header{height:72px}.output main{height:calc(100vh - 118px);min-height:0}.output #stage{height:100%}.output aside{max-height:none;min-height:0}.output #chat-log{max-height:none}.output #chat-form,.output #live-toggle,.output #stop,.output #audio{display:none}.output footer{display:none}.output main{height:calc(100vh - 94px)}.output #subtitle{font-size:22px}.output #state{font-size:12px}
+
+.output header{height:8vh;padding:0 2.2vw}.output header h1{font-size:clamp(24px,2.1vw,42px)}.output header small{font-size:clamp(12px,1vw,20px)}
+.output main{height:90vh;margin:0 1.5vw;grid-template-columns:minmax(0,1fr) 28%;border-radius:1.4vw}.output aside{padding:2vw}.output aside:before{content:'鱼塘聊天室';font-size:clamp(18px,1.5vw,30px)}
+.output #state{display:none}.output #chat-log:empty:before{content:none}.output #subtitle:empty{display:none}.output #subtitle{font-size:clamp(22px,1.8vw,36px);padding:1.2vw 1.6vw;bottom:2vh;max-height:28vh}
+.output .message{font-size:clamp(16px,1.2vw,24px)}.output #stage:before{font-size:clamp(16px,1.3vw,26px)}.output #stage:after{top:calc(26px + 2.6vw);font-size:clamp(13px,1vw,20px)}
+</style>
+<style>
+#ledger{margin:12px 0;padding:16px;border:1px solid #d9bd8570;border-radius:16px;background:#081a2ed9;order:-1}#ledger h2{font-size:18px;color:#f0dfb8;margin:0 0 8px}#ledger dl{display:grid;grid-template-columns:1fr 1fr;margin:0;gap:4px 12px}#ledger dd{margin:0;text-align:right;color:#8de3d0;font-variant-numeric:tabular-nums}#ledger-note{display:block;color:#a6c0ce;font-size:12px}#ledger-settings{order:5}#ledger-settings input{width:100%;padding:8px;background:#10283f;color:white;border:1px solid #617d8b}.output #ledger-settings{display:none}.output #ledger{font-size:clamp(14px,1.05vw,22px);padding:1vw}.output #ledger h2{font-size:clamp(18px,1.3vw,26px)}.output #ledger-note{font-size:clamp(11px,.8vw,16px)}
+
+/* Broadcast fills the browser-source viewport; controls stay on the root page. */
+.output{background:#17354d url('/live-assets/ocean-room.png') center/cover no-repeat}
+.output header{background:linear-gradient(180deg,#0a243cbb,#0a243c55);text-shadow:0 2px 8px #16324d}
+.output main{background:transparent;border:0;height:90vh;min-height:0;grid-template-rows:minmax(0,1fr);gap:1.5vw;overflow:hidden}
+.output #stage{background:transparent;min-height:0}
+.output #stage:before,.output #stage:after{display:none}
+.output aside{background:#102c45d9;border:1px solid #d0e9f544;border-radius:1.4vw;backdrop-filter:blur(16px);overflow:hidden}
+.output #chat-log{min-height:0;overflow:auto;scrollbar-width:none}
+.output #ledger{margin:0 0 2vh;background:#0d233abd}
+.output #ledger-note:empty{display:none}
+.output #subtitle{background:#102b45e8;border-color:#e5d1a880;box-shadow:0 8px 32px #12304733}
+
+/* Separate the character from speech; broadcast does not duplicate chat history. */
+.output aside:before,.output.real-chat aside:before{display:none;content:none}
+.output #chat-log{display:none}
+.output:not(.game-view) main{display:block;position:relative}
+.output:not(.game-view) #stage{width:100%;height:100%}
+.output #stage>iframe{width:52%!important;right:auto!important}
+.output #stage>canvas{width:52%!important;object-fit:contain}
+.output #subtitle{left:55%;right:3%;top:18%;bottom:auto;max-height:48%;overflow:auto;text-align:left;line-height:1.7;scrollbar-width:none;overflow-wrap:anywhere}
+.output:not(.game-view) aside{position:absolute;right:3%;bottom:3%;width:39%;padding:0;background:none;border:0;backdrop-filter:none}
+.output:not(.game-view) #ledger{margin:0}
+</style>
+<header><h1>大肥鱼直播控制台</h1><small>在此管理直播画面、语音与弹幕互动</small></header>
+<main><section id="stage"><div id="subtitle">正在加载鲸鱼娘…</div></section><aside>
+<form id="chat-form"><label for="comment">本地互动输入</label><textarea id="comment" maxlength="500" rows="3" placeholder="想跟大肥鱼聊什么？"></textarea><button id="send" disabled>发送弹幕</button><button type="button" id="new-chat">新对话</button></form><button type="button" id="live-toggle" hidden>开始接收真实弹幕</button><div id="state">加载中</div><div id="error" role="status"></div><div id="chat-log" aria-live="polite"></div><details><summary>语音回放样例</summary><button id="start" disabled>播放语音样例</button><button id="next" disabled>下一轮</button>
+<div id="rounds"></div></details><button id="stop">停止播放</button><audio id="audio" controls></audio><button id="audio-retry" hidden>启用声音并继续</button>
+<small>可点任意一轮试听。10 分钟模式保留空场间隔；此版本不会自动填补冷场。口型按音量驱动，尚非音素级同步。</small>
+<section id="ledger" hidden><h2>大肥鱼的口粮账本</h2><dl><dt>模型支出</dt><dd id="spent">—</dd><dt>礼物收入</dt><dd id="earned">—</dd><dt>收支差额</dt><dd id="balance">—</dd><dt>累计 Token</dt><dd id="gift-value">—</dd></dl><small id="ledger-note"></small></section>
+
+</aside></main>
+<footer><span id="model-credit">模型加载中</span>· 仅本地非商业预演。对话使用现有人设与只读记忆快照，尚非 DSH 实时会话；本次模拟不写入正式记忆。</footer>
+
+<script>
+const streamPreview=new URLSearchParams(location.search).get('view')==='stream';if(streamPreview){document.body.classList.add('preview');document.querySelector('h1').textContent='大肥鱼的小小直播间';document.querySelector('header small').textContent='AI 虚拟主播';}
+const visualOnly=new URLSearchParams(location.search).get('preview')==='1';
+const streamOutput=streamPreview;if(streamOutput)document.body.classList.add('output');
+const directAudio=new URLSearchParams(location.search).get('audio')==='direct';
+const $=s=>document.querySelector(s),audio=$('#audio');let listening=false,liveTimer=null,liveEpoch=0,audioBlocked=false,pendingAudio=null;let config,busy=false,session=crypto.randomUUID(),generation=0;let app,model,data,analyser,bins,ctx,index=-1,timer=null,started=0,playing=false;
+function state(s){$('#state').textContent=s}function cancel(){generation++;clearInterval(timer);timer=null;playing=false;audio.pause();state('已暂停，可点击一轮重新试听')}
+let ledgerInitialized=false;
+async function refreshLedger(){try{const response=await fetch('/api/ledger');if(!response.ok)throw Error();const r=await response.json();if(!r)return;$('#ledger').hidden=false;const money=n=>'¥ '+n.toFixed(6);$('#spent').textContent=money(r.costYuan);$('#earned').textContent='¥ '+r.giftYuan.toFixed(3);$('#balance').textContent=r.unknownCost?'待核算':money(r.netYuan);$('#gift-value').textContent=r.consumed.toLocaleString('zh-CN');$('#ledger-note').textContent=r.unknownCost?r.unknownCost+' 次费用待核算':'';ledgerInitialized=true}catch(e){if(ledgerInitialized)$('#ledger-note').textContent='账本暂时不可用，以上为上次数据';}finally{setTimeout(refreshLedger,3000)}}refreshLedger();
+async function play(i){if(i>=data.rows.length){cancel();return}index=i;const r=data.rows[i];document.querySelectorAll('.row').forEach((el,j)=>el.classList.toggle('active',i===j));$('#subtitle').textContent=r.text;state('第 '+(i+1)+' 轮 · 模型生成耗时 '+r.modelSeconds+' 秒（此次为预生成回放）');
+ await speak('/take/'+r.audio)}
+async function speak(url){
+ const current=generation;pendingAudio=url;
+ if(!directAudio&&!ctx){ctx=new AudioContext();const source=ctx.createMediaElementSource(audio);analyser=ctx.createAnalyser();analyser.fftSize=256;bins=new Uint8Array(analyser.fftSize);source.connect(analyser);analyser.connect(ctx.destination)}
+ let timeout;
+ try{
+  if(!directAudio)await Promise.race([ctx.resume(),new Promise((_,reject)=>{timeout=setTimeout(()=>reject(Error('音频未启用')),2500)})]);
+  if(current!==generation)return;
+  audio.src=url;await audio.play();pendingAudio=null;audioBlocked=false;$('#audio-retry').hidden=true;$('#error').textContent='';
+ }catch(e){audioBlocked=true;$('#audio-retry').hidden=false;$('#error').textContent='声音尚未启用：请在浏览器素材交互中点击「启用声音并继续」。弹幕回复已暂停。';}
+ finally{clearTimeout(timeout)}
+}
+async function initJingyu(stage,url){
+ const target=new URL(url,location.origin),frame=document.createElement('iframe');frame.title='Live2D 角色';frame.style='position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none';
+ const ready=new Promise((resolve,reject)=>{const timer=setTimeout(()=>{window.removeEventListener('message',onReady);reject(Error('Live2D 角色加载超时'))},30000);function onReady(e){if(e.origin===target.origin&&e.source===frame.contentWindow&&e.data?.type==='lane-ready'){clearTimeout(timer);window.removeEventListener('message',onReady);resolve()}}window.addEventListener('message',onReady)});
+ frame.src=url;stage.prepend(frame);await ready;
+ function sync(){let sum=0;if(analyser&&!audio.paused){analyser.getByteTimeDomainData(bins);for(const v of bins)sum+=((v-128)/128)**2}frame.contentWindow.postMessage({type:'sync',text:$('#subtitle').textContent,audio:{paused:audio.paused,currentTime:audio.currentTime,duration:Number.isFinite(audio.duration)?audio.duration:0},level:bins?Math.min(1,Math.sqrt(sum/bins.length)*5):0},target.origin);requestAnimationFrame(sync)}sync();
+}
+$('#audio-retry').onclick=()=>{if(pendingAudio)speak(pendingAudio)};
+$('#stop').onclick=cancel;$('#next').onclick=()=>{cancel();play((index+1)%data.rows.length)};$('#start').onclick=()=>{cancel();started=Date.now();playing=true;play(0);timer=setInterval(()=>{const elapsed=(Date.now()-started)/1000;if(elapsed>=600){cancel();state('语音样例播放结束');return}if(!audio.paused)return;const next=data.rows[index+1];if(next&&elapsed>=next.at)play(index+1)},500)};
+(async()=>{try{
+config=await(await fetch('/api/config')).json();$('#model-credit').textContent=config.credit || (config.model.startsWith('/pet/')?'模型：氵六青 · 角色：上善无形 / ZipZipPipe · CC BY-NC-SA 4.0':config.model.endsWith('/whale-maid.model3.json')?'模型：br0ny4/dsh-live2d-pet · 社区鲸鱼娘二创':'模型：Mao绒绒家园「大肥鱼」');if(config.live){document.body.classList.add('real-chat');$('#live-toggle').hidden=false;document.querySelector('header small').textContent=streamOutput?'AI 虚拟主播':'直播间 '+config.live.room+' · 真实弹幕待接收 · 弹幕接收状态不代表开播状态';}data=await(await fetch('/take/rehearsal.json')).json();for(const [i,r]of data.rows.entries()){const el=document.createElement('div');el.className='row';el.textContent=(i+1)+'. '+r.comments.join(' / ');el.onclick=()=>{cancel();play(i)};$('#rounds').append(el)}
+const stage=$('#stage');const jingyuUrl=config.avatarUrl||config.jingyuUrl;if(jingyuUrl){await initJingyu(stage,jingyuUrl);}else{for(const src of ["/live-vendor/pixi-7.4.3.min.js","/pet/vendor/live2dcubismcore.min.js","/live-vendor/cubism4-0.5.0-beta.min.js"])await new Promise((resolve,reject)=>{const script=document.createElement("script");script.src=src;script.onload=resolve;script.onerror=reject;document.head.append(script)});app=new PIXI.Application({resizeTo:stage,backgroundAlpha:0,antialias:true,resolution:Math.min(devicePixelRatio,1.5),autoDensity:true});app.ticker.maxFPS=30;stage.prepend(app.view);PIXI.live2d.Live2DModel.registerTicker(PIXI.Ticker);
+// Cubism's default buffer supports 36 mask groups; this model has 49.
+// Allocate multiple buffers using the renderer's supported initialization API.
+const rendererPrototype=PIXI.live2d.CubismRenderer_WebGL.prototype;
+const initializeRenderer=rendererPrototype.initialize;
+rendererPrototype.initialize=function(core){
+ const groups=new Set(core.getDrawableMasks().filter(ids=>ids.length).map(ids=>Array.from(ids).sort((a,b)=>a-b).join(',')));
+ initializeRenderer.call(this,core,Math.max(1,Math.ceil(groups.size/32)));
+ this.setClippingMaskBufferSize(1024);
+};
+model=await PIXI.live2d.Live2DModel.from(config.model,{autoInteract:false,autoUpdate:true,idleMotionGroup:config.model.endsWith('/whale-maid.model3.json')?'Idle':'__no_idle__'});app.stage.addChild(model);
+function fit(){const m=model.internalModel;const scale=Math.min(stage.clientWidth/m.width,stage.clientHeight/m.height)*.96;model.scale.set(scale);model.position.set((stage.clientWidth-m.width*scale)/2,(stage.clientHeight-m.height*scale)/2)}fit();window.addEventListener('resize',fit);
+model.internalModel.on('beforeModelUpdate',()=>{let rms=0;if(analyser&&!audio.paused){analyser.getByteTimeDomainData(bins);for(const v of bins)rms+=((v-128)/128)**2;rms=Math.sqrt(rms/bins.length)}model.internalModel.coreModel.setParameterValueById('ParamMouthOpenY',Math.min(1,rms*5));});
+}
+$('#subtitle').textContent=visualOnly&&new URLSearchParams(location.search).get('sample')==='1'?'这边交给我啦！我先看看基地，再让坦克去前面探探路。你们有好主意，也可以发弹幕告诉我。':streamOutput?'':'发条弹幕吧，我在这儿。';state('鲸鱼娘已加载 · 尚未开始');$('#start').disabled=false;$('#next').disabled=false;$('#send').disabled=!config.chat;
+if(streamOutput){document.querySelector('header small').textContent='AI 虚拟主播';document.querySelector('footer').replaceChildren($('#model-credit'));if(config.live&&!visualOnly){listening=true;liveEpoch++;pollLive(liveEpoch);}}
+}catch(e){$('#error').textContent=e.message;state('加载失败，请检查本地模型与预演文件')}})();
+
+function message(who,text){const el=document.createElement('div');el.className='message';el.textContent=who+'：'+text;$('#chat-log').append(el);while($('#chat-log').children.length>30)$('#chat-log').firstChild.remove();el.scrollIntoView({block:'nearest'})}
+let liveConnectionError=false;
+async function liveRequest(body){
+ for(let attempt=0;attempt<2;attempt++){
+  const response=await fetch('/api/live/next',{method:'POST',headers:{'Content-Type':'application/json','X-Pilot-Token':config.token},body:JSON.stringify(body)});
+  // A rejected authorization check executes no action, so only this response is safe to retry.
+  if(response.status===403&&attempt===0){config=await(await fetch('/api/config')).json();continue;}
+  if(!response.headers.get('content-type')?.includes('application/json'))throw Error('弹幕连接暂时中断，正在重连…');
+  const result=await response.json();
+  if(!response.ok)throw Error(result.error||'弹幕接收暂时失败，正在重试…');
+  return result;
+ }
+}
+$('#new-chat').onclick=()=>{if(busy)return;cancel();session=crypto.randomUUID();$('#chat-log').replaceChildren();state('已开始新对话，原来的正式记忆未改变')};
+$('#chat-form').onsubmit=async e=>{e.preventDefault();if(busy||!config?.chat)return;const text=$('#comment').value.trim();if(!text)return;cancel();const requestGeneration=generation;busy=true;$('#send').disabled=true;$('#new-chat').disabled=true;$('#error').textContent='';message('你',text);$('#comment').value='';state('大肥鱼正在想，然后合成语音…');
+try{const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','X-Pilot-Token':config.token},body:JSON.stringify({session,text})});const r=await response.json();if(!response.ok)throw Error(r.error||'生成失败');message('大肥鱼',r.text);$('#subtitle').textContent=r.text;state('现场回复 · 共 '+r.totalSeconds+' 秒（模型 '+r.modelSeconds+' 秒）');if(r.warning)$('#error').textContent=r.warning;if(r.audio&&requestGeneration===generation)await speak(r.audio)}catch(err){$('#error').textContent=err.message;state('这一轮未完成，可以重试')}finally{busy=false;$('#send').disabled=false;$('#new-chat').disabled=false}};
+
+$('#live-toggle').onclick=()=>{listening=!listening;liveEpoch++;clearTimeout(liveTimer);$('#live-toggle').textContent=listening?'暂停真实弹幕':'开始接收真实弹幕';if(listening)pollLive(liveEpoch);};
+async function pollLive(epoch){
+ if(!listening||epoch!==liveEpoch)return;
+ if(busy||audioBlocked||!audio.paused){liveTimer=setTimeout(()=>pollLive(epoch),1500);return;}
+ busy=true;$('#send').disabled=true;
+ try{
+  const r=await liveRequest({session});
+  if(liveConnectionError){if(!audioBlocked)$('#error').textContent='';liveConnectionError=false;}
+  state('直播间 '+r.live.room+' · '+r.live.status+' · 待回复 '+r.live.queued);
+  if(r.comment){message(r.comment.name,r.comment.text);message('大肥鱼',r.text);$('#subtitle').textContent=r.text;if(r.warning)$('#error').textContent=r.warning;if(r.audio&&listening&&epoch===liveEpoch)await speak(r.audio);}
+ }catch(e){liveConnectionError=true;$('#error').textContent='弹幕连接暂时中断，正在自动重连…';}
+ finally{busy=false;$('#send').disabled=false;if(listening&&epoch===liveEpoch)liveTimer=setTimeout(()=>pollLive(epoch),1500);}
+}
+</script><script src="/game-live.js"></script></html>

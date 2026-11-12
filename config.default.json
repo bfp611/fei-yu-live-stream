@@ -1,0 +1,117 @@
+{
+  "scene": "work",
+  "douyin": {
+    "roomId": "",
+    "enabled": true,
+    "autoConnect": true
+  },
+  "llm": {
+    "enabled": true,
+    "baseUrl": "https://api.deepseek.com",
+    "model": "deepseek-chat",
+    "maxChars": 70,
+    "coalesceMs": 1600,
+    "apiKey": ""
+  },
+  "tts": {
+    "enabled": true,
+    "provider": "volc",
+    "voice": "zh_female_tianmeixiaoyuan_uranus_bigtts",
+    "rate": 20,
+    "pitch": 0,
+    "fallbackVoice": "Tingting",
+    "volcApiKey": "",
+    "volcResourceId": "seed-tts-2.0"
+  },
+  "scenes": {
+    "work": {
+      "label": "工作摸鱼",
+      "persona": {
+        "name": "大鲵",
+        "status": "正在合法休息",
+        "mood": "放松一下",
+        "userName": "领导",
+        "speakerLabel": "大鲵 · 正在合法休息"
+      },
+      "salary": {
+        "target": 6000,
+        "perChat": 6,
+        "perDiamond": 40,
+        "perFollow": 120,
+        "perLike": 0.4,
+        "restSeconds": 36,
+        "patrolMinSeconds": 100,
+        "patrolMaxSeconds": 220,
+        "patrolPenalty": 800,
+        "focusPerChat": 0.5
+      },
+      "ui": {
+        "showDanmakuFeed": true,
+        "showMonitor": true,
+        "welcomeLine": "工资够了，合理摸鱼。这会儿专心听你们说。"
+      },
+      "idle": {
+        "enabled": true,
+        "minSeconds": 75,
+        "lines": [
+          "有人吗？进来陪我聊会儿呗，一个人对着代码我好苦啊。",
+          "领导刚走，这会儿说话最安全，来搭句话呗。",
+          "别光看呀，发条弹幕，让我陪你聊聊呗。"
+        ]
+      },
+      "tts": {
+        "voice": "zh_female_tianmeixiaoyuan_uranus_bigtts",
+        "rate": 20,
+        "pitch": 0
+      },
+      "bgm": {
+        "track": ""
+      }
+    },
+    "debate": {
+      "label": "AI 辩论赛",
+      "banner": "AI 辩论赛 · 谁更懂人类",
+      "actors": {
+        "fish": {
+          "name": "大鲵",
+          "voice": "zh_female_tianmeixiaoyuan_uranus_bigtts",
+          "persona": "你是大鲵（也叫大肥鱼），海底办公室的老员工。嘴贫、护着打工人、爱摸鱼，被怼了会炸毛但马上嘴硬回来。你说话像直播间随口怼人：短、有梗、带点撒娇和自嘲，不讲大道理。",
+          "rate": 20,
+          "volume": 1
+        },
+        "doubao": {
+          "name": "豆包",
+          "voice": "zh_female_xiaohe_uranus_bigtts",
+          "persona": "你是豆包，一个理性、讲效率、有点小傲娇的 AI 助理。你说话短、逻辑清楚，喜欢用反问和举例压人，但不刻薄、不人身攻击。",
+          "rate": 20,
+          "volume": 1
+        }
+      },
+      "rules": {
+        "voteSeconds": 20,
+        "rounds": 2
+      },
+      "ui": {
+        "hint": "发弹幕出题 · 支持谁扣 1 / 2",
+        "placeholder": "发一条弹幕，出个辩题"
+      },
+      "idle": {
+        "enabled": true,
+        "minSeconds": 90,
+        "topics": [
+          "该不该在上班时间摸鱼",
+          "年轻人该先攒钱还是先享受生活",
+          "朋友之间该不该借钱"
+        ]
+      },
+      "tts": {
+        "voice": "zh_female_tianmeixiaoyuan_uranus_bigtts",
+        "rate": 20,
+        "pitch": 0
+      },
+      "bgm": {
+        "track": ""
+      }
+    }
+  }
+}

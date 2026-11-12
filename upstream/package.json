@@ -1,0 +1,58 @@
+{
+  "name": "dsh-live-studio",
+  "version": "0.2.0-alpha.3",
+  "description": "DSH 虚拟主播：弹幕互动、语音、Live2D 桥接和直播画面",
+  "type": "module",
+  "main": "index.js",
+  "license": "MIT",
+  "keywords": [
+    "dsh-plugin",
+    "dsh",
+    "agent",
+    "bilibili"
+  ],
+  "files": [
+    "index.js",
+    "launcher.mjs",
+    "cordis.patch.yml",
+    "backend",
+    "examples",
+    "requirements.txt",
+    "README.md",
+    "NOTICE.md",
+    "LICENSE",
+    "avatar-tools.mjs"
+  ],
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/schemastery": "^3.18.4",
+    "@deepseek-ai/dsh-tools": ">=0.2.1-rc.5"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "author": {
+    "name": "XiaoZheBrother",
+    "email": "958117002@qq.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/XiaoZheBrother/dsh-live-studio.git"
+  },
+  "homepage": "https://github.com/XiaoZheBrother/dsh-live-studio#readme",
+  "bugs": {
+    "url": "https://github.com/XiaoZheBrother/dsh-live-studio/issues"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json",
+    "./launcher.mjs": "./launcher.mjs"
+  }
+}

@@ -1,0 +1,14 @@
+node_modules/
+data/
+config.json
+.DS_Store
+*.log
+
+.venv*/
+*.tgz
+
+# 便携环境和对应源代码随完整ZIP发布，避免误推大型二进制到Git历史。
+runtime/darwin-*/node
+runtime/win-*/node.exe
+third-party-sources/*.tar.xz
+third-party-sources/*.tar.gz

@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 辩论赛 · 直播工作台</title>
+<style>
+  :root{--bg:#f4f6f2;--card:#fff;--line:#e4e8e0;--ink:#23312a;--muted:#7d8b83;--green:#2f7d5c;--green-soft:#e3f1e8;--gold:#b98d3e}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 -apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;height:100vh;overflow:hidden}
+  .app{display:grid;grid-template-columns:236px 1fr;height:100vh}
+  .side{background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;padding:22px 16px}
+  .brand{display:flex;align-items:center;gap:10px;padding:0 6px 22px}
+  .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,#4a6ad6,#2b3f8f);color:#fff;display:grid;place-items:center;font-size:22px;font-weight:700}
+  .brand b{display:block;font-size:17px;letter-spacing:2px}
+  .brand small{display:block;font-size:9px;letter-spacing:2.4px;color:var(--muted)}
+  .nav{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+  .nav button{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:10px;color:#42514a;font-size:14px}
+  .nav button:hover{background:#f2f6f1}
+  .nav button.on{background:var(--green-soft);color:#1f5e44;font-weight:600}
+  .nav .ico{width:18px;height:18px;display:grid;place-items:center;font-size:15px;opacity:.8}
+  .side .foot{margin-top:auto;color:#93a29a;font-size:11px;letter-spacing:1px;padding:0 8px}
+  .side .foot b{display:block;color:#5e6f66;font-size:12px;letter-spacing:2px;margin-bottom:4px}
+  .main{overflow:auto;padding:26px 30px 40px}
+  .head{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+  .head h1{font-size:22px;margin:0;letter-spacing:1px}
+  .pill{font-size:12px;padding:5px 10px;border-radius:999px;background:#fff;border:1px solid var(--line);color:var(--muted)}
+  .pill.ok{background:#e7f5ec;border-color:#c3e5d0;color:#237a52}
+  .pill.bad{background:#fdecec;border-color:#f4c9c9;color:#b44646}
+  .head .actions{margin-left:auto;display:flex;gap:8px}
+  button.primary{background:var(--green);color:#fff;border:0;border-radius:9px;padding:9px 16px;font:inherit;cursor:pointer}
+  button.danger{background:#b44646;color:#fff;border:0;border-radius:9px;padding:9px 16px;font:inherit;cursor:pointer}
+  button.ghost{background:#fff;border:1px solid var(--line);border-radius:9px;padding:9px 14px;font:inherit;cursor:pointer;color:#41514a}
+  button:disabled{opacity:.5;cursor:wait}
+  .cols{display:grid;grid-template-columns:minmax(0,1fr) 356px;gap:22px;align-items:start}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:18px}
+  .card h2{font-size:13px;letter-spacing:1.5px;color:#5a6b62;margin:0 0 14px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .card h2 em{font-style:normal;color:#a3b0a8;font-size:11px;letter-spacing:0}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  input[type=text],input[type=number],select,textarea{background:#fbfcfa;border:1px solid #dde3da;border-radius:9px;padding:9px 11px;font:inherit;color:var(--ink);outline:none}
+  input:focus,select:focus,textarea:focus{border-color:#8fc4a8}
+  textarea{width:100%;resize:vertical}
+  .wide{flex:1;min-width:180px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+  .stat{background:#f7f9f5;border:1px solid #eef1ea;border-radius:10px;padding:10px 12px;min-width:0}
+  .stat b{display:block;font-size:20px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stat span{font-size:11px;color:var(--muted)}
+  .hint{color:var(--muted);font-size:12px;margin-top:10px;line-height:1.8}
+  .feed{max-height:420px;overflow:auto;margin:-4px -6px 0}
+  .ev{display:flex;gap:10px;padding:9px 6px;border-bottom:1px solid #f1f3ee;font-size:13px;align-items:flex-start}
+  .ev:last-child{border-bottom:0}
+  .ev time{color:#a4b0a8;font-size:11px;min-width:52px;font-variant-numeric:tabular-nums;padding-top:2px}
+  .ev .tag{font-size:10px;border-radius:5px;padding:1px 6px;background:#eef3ee;color:#5d6f64;min-width:44px;text-align:center}
+  .ev .tag.gift{background:#fbf1dc;color:#9a7222}
+  .ev .tag.fish{background:#e6f0fb;color:#2b5c8f}
+  .ev .tag.dou{background:#fbe8ee;color:#a03b5b}
+  .ev p{margin:0;color:#3c4a43;flex:1;overflow-wrap:anywhere}
+  .ev p b{color:#1f5e44}
+  .preview{background:#0d2330;border-radius:14px;overflow:hidden;position:relative;aspect-ratio:9/16;border:1px solid #0b1c26}
+  .preview iframe{width:1080px;height:1920px;border:0;transform-origin:top left;pointer-events:none}
+  .sideGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .sideBox{border:1px solid #eef1ea;border-radius:12px;padding:14px;background:#fafcf9}
+  .sideBox.dou{background:#fdfaf9}
+  .sideBox>b{display:block;font-size:12px;letter-spacing:2px;color:#5a6b62;margin-bottom:10px}
+  .sideBox .field{margin-bottom:10px}
+  .sideBox input[type=range]{width:100%;accent-color:#2f7d5c}
+  .sideBox button{width:100%}
+  .field label em{font-style:normal;color:#2f7d5c;font-weight:600}
+  .verdict{margin-top:12px;padding:12px 14px;border-radius:10px;background:#f6faf6;border:1px solid #e6eee6;
+    font-size:13px;line-height:1.7;color:#3c4a43;min-height:44px}
+  .verdict.ok{background:#eaf7ee;border-color:#c9e8d3;color:#1f5e44}
+  .verdict.bad{background:#fdf0ef;border-color:#f3cfcc;color:#a03b3b}
+  .previewLoad{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;
+    border:0;border-radius:999px;padding:10px 22px;font:inherit;font-size:13px;cursor:pointer;
+    background:rgba(255,255,255,.14);color:#cfe6f5;border:1px solid rgba(255,255,255,.25)}
+  .previewLoad.loaded{display:none}
+  .preview .sync{position:absolute;left:10px;bottom:10px;background:#0b1c26cc;color:#bcd8cd;font-size:10px;padding:3px 8px;border-radius:999px;letter-spacing:1px}
+  .pv-head{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);margin:10px 2px}
+  .pv-head a{color:var(--green);text-decoration:none}
+  .fields{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+  .field input,.field select,.field textarea{width:100%}
+  .hidden{display:none!important}
+  .steps{counter-reset:s;margin:0;padding:0;list-style:none}
+  .steps li{counter-increment:s;position:relative;padding:0 0 16px 34px;font-size:13px;color:#3c4a43}
+  .steps li:before{content:counter(s);position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;background:var(--green-soft);color:#1f5e44;font-size:11px;display:grid;place-items:center;font-weight:700}
+  .steps code{background:#f3f6f1;border:1px solid #e4e8e0;border-radius:6px;padding:2px 6px;font-size:12px;color:#2b5c45}
+  .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:#1f5e44;color:#fff;padding:8px 16px;border-radius:999px;font-size:12px;opacity:0;transition:.25s;pointer-events:none;z-index:9998}
+  .toast.show{opacity:1}
+  @media(max-width:880px){.cols{grid-template-columns:1fr}.preview{max-width:340px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo">辩</div><div><b>AI 辩论赛</b><small>FISH SHIFT STUDIO</small></div></div>
+    <nav class="nav">
+      <button class="on" data-tab="work"><span class="ico">▣</span>直播工作台</button>
+      <button data-tab="rules"><span class="ico">⚙</span>辩题与人设</button>
+      <button data-tab="records"><span class="ico">≡</span>互动记录</button>
+      <button data-tab="guide"><span class="ico">↗</span>开播指南</button>
+    </nav>
+    <div class="foot"><b>场景二 · 辩论赛</b>与「工作摸鱼」共用直播间</div>
+  </aside>
+
+  <main class="main">
+    <div class="head">
+      <h1 id="pageTitle">直播工作台</h1>
+      <span class="pill" id="connPill">未连接</span>
+      <span class="pill" id="phasePill">未开始</span>
+      <div class="actions">
+        <button class="ghost" id="openStream">查看直播画面</button>
+        <button class="ghost" id="tEnter">模拟进场</button>
+        <button class="primary" id="connectBtn">连接抖音</button>
+      </div>
+    </div>
+
+    <div class="cols">
+      <section>
+        <!-- 工作台 -->
+        <div data-panel="work">
+          <div class="card">
+            <h2>抖音接入 <em>只读弹幕 · 和「工作摸鱼」共用同一条连接</em></h2>
+            <div class="row">
+              <input type="text" class="wide" id="room" placeholder="live.douyin.com 后面的数字，或 v.douyin.com 分享链接">
+              <button class="primary" id="conn2">连接</button>
+              <button class="ghost" id="disconnectBtn">断开</button>
+            </div>
+            <div class="hint">普通评论照常回复，适合辩论的弹幕才会开启新题；从开场到投票结束均可发「1」「2」或「扣1」「扣2」支持，直接计票，不触发语音回复。</div>
+          </div>
+
+          <div class="card">
+            <h2>比赛状态</h2>
+            <div class="stats">
+              <div class="stat"><b id="sTopic">—</b><span>当前辩题</span></div>
+              <div class="stat"><b id="sRound">0</b><span>轮次</span></div>
+              <div class="stat"><b id="sFish">0</b><span>正方票</span></div>
+              <div class="stat"><b id="sDou">0</b><span>反方票</span></div>
+            </div>
+            <div class="hint" id="scoreLine" style="margin-top:10px">本场比分 —</div>
+            <div class="row" style="margin-top:14px">
+              <input type="text" class="wide" id="topicTest" value="该不该在上班时间摸鱼">
+              <button class="primary" id="startBtn">开一局</button>
+              <button class="ghost" id="tallyBtn">立即开票</button>
+              <button class="ghost" id="scoreResetBtn" title="把总比分清零">清零比分</button>
+              <button class="danger" id="stopBtn">结束</button>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button class="ghost" id="voteFish">给正方 +1</button>
+              <button class="ghost" id="voteDou">给反方 +1</button>
+              <span class="hint" style="margin:0">导播手动加票，用来试流程</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>发送测试弹幕 <em>和直播评论一样，会收到角色回复</em></h2>
+            <div class="row">
+              <input type="text" id="testName" value="测试观众" maxlength="20" aria-label="观众昵称" style="width:130px">
+              <input type="text" class="wide" id="testDanmu" maxlength="120" placeholder="随便聊一句，或出个辩题；按回车发送">
+              <button class="primary" id="testDanmuBtn">发送</button>
+            </div>
+            <div class="hint" id="sendStatus" role="status">普通评论会先接话，再继续辩论；只有新辩题才会换题。发言等待当前句说完，避免抢话。</div>
+          </div>
+
+          <div class="card">
+            <h2>弹幕与回复 <em>实时监测 · 最近 200 条事件</em></h2>
+            <div class="hint" id="monitorStatus" role="status">正在连接实时监测…</div>
+            <div class="feed" id="feedMini" style="max-height:360px;margin-top:12px"><div class="hint">还没有互动，发一条评论试试。</div></div>
+          </div>
+
+          <div class="card">
+            <h2>节奏 <em>只影响辩论场景</em></h2>
+            <div class="fields">
+              <div class="field"><label>辩论轮次（双方各说一次为一轮）</label><input type="number" id="debateRounds" min="1" max="30" step="1" value="2"></div>
+              <div class="field"><label>投票时长（秒）</label><input type="number" id="voteSec" min="8" max="120" value="20"></div>
+              <div class="field"><label>节目主题（大屏大字）</label><input type="text" id="banner"></div>
+            </div>
+            <div class="field" style="margin-top:10px"><label>底部提示</label><input type="text" id="hintText"></div>
+            <div class="field" style="margin-top:10px"><label>没人出题时大屏显示的辩题文字</label><input type="text" id="placeholderText"></div>
+            <div class="hint">第一轮双方立论，后续轮次轮流反驳，期间随时可投支持票；辩完后保留倒计时投票时间，已有票数继续累积。可设 1–30 轮；保存后从下一局生效。</div>
+            <div class="row" style="margin-top:12px"><button class="primary" id="saveRules">保存</button></div>
+          </div>
+
+          <div class="card">
+            <h2>双方 <em>名字 · 音色 · 语速 · 音量</em></h2>
+            <div class="sideGrid">
+              <div class="sideBox">
+                <b>正方</b>
+                <div class="field"><label>名字</label><input type="text" id="fishName"></div>
+                <div class="field"><label>音色</label><select id="fishVoice"></select></div>
+                <div class="field"><label>语速 <em id="fishRateVal"></em></label><input type="range" id="fishRate" min="-30" max="60" step="1"></div>
+                <div class="field"><label>音量 <em id="fishVolVal"></em></label><input type="range" id="fishVol" min="0" max="100" step="1"></div>
+                <button class="ghost" id="testFish">试听</button>
+              </div>
+              <div class="sideBox dou">
+                <b>反方</b>
+                <div class="field"><label>名字</label><input type="text" id="douName"></div>
+                <div class="field"><label>音色</label><select id="douVoice"></select></div>
+                <div class="field"><label>语速 <em id="douRateVal"></em></label><input type="range" id="douRate" min="-30" max="60" step="1"></div>
+                <div class="field"><label>音量 <em id="douVolVal"></em></label><input type="range" id="douVol" min="0" max="100" step="1"></div>
+                <button class="ghost" id="testDou">试听</button>
+              </div>
+            </div>
+            <div class="row" style="margin-top:12px"><button class="primary" id="saveActors">保存</button></div>
+            <div class="hint">语速按百分比算（+20 就是快 20%）。两个人节奏不一样时，调这两个滑块对齐，别让一个抢话一个拖。</div>
+          </div>
+        </div>
+
+        <!-- 辩题与人设 -->
+        <div data-panel="rules" class="hidden">
+          <div class="card">
+            <h2>正方人设 <em>大鲵</em></h2>
+            <textarea id="fishPersona" rows="6"></textarea>
+            <div class="row" style="margin-top:12px"><button class="primary" id="saveFishPersona">保存人设</button></div>
+            <div class="hint">决定「大鲵」怎么怼人：越具体，吵起来越像他本人。</div>
+          </div>
+          <div class="card">
+            <h2>反方人设 <em>豆包</em></h2>
+            <textarea id="douPersona" rows="6"></textarea>
+            <div class="row" style="margin-top:12px"><button class="primary" id="savePersona">保存人设</button></div>
+            <div class="hint">只影响「豆包」怎么反驳：越具体，吵架越像真的。</div>
+          </div>
+          <div class="card">
+            <h2>无人发言时的辩题 <em>按顺序自动开辩</em></h2>
+            <div class="row"><label><input id="idleEnabled" type="checkbox"> 启用预设辩题</label></div>
+            <div class="field" style="margin:10px 0"><label>空闲多久后开下一题（秒）</label><input id="idleMinSeconds" type="number" min="0" max="3600" value="90"></div>
+            <textarea id="idleTopics" rows="5" maxlength="487" placeholder="该不该在上班时间摸鱼&#10;年轻人该先攒钱还是先享受生活"></textarea>
+            <div class="row" style="margin-top:12px"><button class="primary" id="saveIdle">保存</button></div>
+            <div class="hint">一行一个辩题，每题最多 60 字、最多 8 题。无人发弹幕且上一局结束后，按顺序循环开辩；清空或关闭可停用自动出题。</div>
+          </div>
+          <div class="card">
+            <h2>规则</h2>
+            <div class="hint">一题一局：双方立论 → 交叉反驳 → 扣 1 / 扣 2 投票 → 输方认输（平票双方回应）。无人发言时轮流使用预设辩题。进场由当前说话人说完这句后欢迎、邀请出题。弹幕在句末优先处理：大模型判断是辩题就换题开新局，普通评论先针对内容回复再继续原辩论。敏感话题婉拒。所有语音共用一个队列，等当前句播放结束再开口。</div>
+          </div>
+        </div>
+
+        <!-- 互动记录 -->
+        <div data-panel="records" class="hidden">
+          <div class="card"><h2>互动记录 <em>实时</em></h2><div class="feed" id="feed"></div></div>
+        </div>
+
+        <!-- 开播指南 -->
+        <div data-panel="guide" class="hidden">
+          <div class="card">
+            <h2>开播四步</h2>
+            <ol class="steps">
+              <li>启动：<code>./start.sh</code>（一个后端同时托管两个场景）。</li>
+              <li>左下角切到「AI 辩论赛」，这页就变成辩论场景的控制台。</li>
+              <li>填直播间号并连接；手机开播后发一条弹幕试试。</li>
+              <li>OBS 浏览器源填 <code>http://127.0.0.1:3088/?view=stream</code>，宽 1080 高 1920。</li>
+            </ol>
+          </div>
+          <div class="card">
+            <h2>为什么这样设计</h2>
+            <div class="hint">
+              两个场景共用同一个后端、同一条抖音连接、同一套语音和大模型，所以①不会出现两个进程抢一个直播间、②切场景不用重连、③OBS 地址固定不用改。<br>
+              差异只有配置：人物、规则、音色、背景乐、预设辩题、页面，都存在 <code>config.json</code> 的 <code>scenes.work</code> 和 <code>scenes.debate</code> 里，各配各的。
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside>
+        <div class="pv-head"><span>直播画面</span><a href="/?scene=debate" target="_blank">新窗口打开 ↗</a></div>
+        <div class="preview" id="previewBox">
+          <iframe id="preview" title="辩论赛画面" data-src="/?scene=debate&amp;mute=1&amp;embed=1"></iframe>
+          <button class="previewLoad" id="previewLoad">加载预览</button>
+          <span class="sync">1080 × 1920</span>
+        </div>
+        <div class="card" style="margin-top:18px">
+          <h2>背景音乐 <em>场景级</em></h2>
+          <audio id="consoleBgm" loop preload="metadata"></audio>
+          <div class="field" style="margin-bottom:10px"><label>音乐播放位置</label><select id="bgmOutput" style="width:100%"><option value="console">当前工作台（本机听）</option><option value="stage">直播窗口（推流画面出声）</option></select></div>
+          <div class="hint" id="bgmPlaybackStatus" role="status">尚未确认播放</div>
+          <select id="bgmTrack" style="width:100%"></select>
+          <div class="row" style="margin-top:10px">
+            <button class="ghost" id="bgmPrev">上一首</button>
+            <button class="primary" id="bgmToggle">播放</button>
+            <button class="ghost" id="bgmNext">下一首</button>
+          </div>
+          <div class="field" style="margin-top:14px">
+            <label>音量 <em id="bgmVolVal">—</em></label>
+            <input type="range" id="bgmVol" min="0" max="100" step="1" value="22">
+          </div>
+          <div class="hint">选中的曲子会记到「辩论赛」这个场景，切回摸鱼场景放的是它自己的。</div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const titles = { work: '直播工作台', rules: '辩题与人设', records: '互动记录', guide: '开播指南' };
+let ST = null;
+let voicesLoaded = false;
+let voicesInit = false;
+let slidersInit = false;
+let idleInit = false;
+
+document.querySelectorAll('.nav button').forEach((b) => {
+  b.onclick = () => {
+    document.querySelectorAll('.nav button').forEach((x) => x.classList.toggle('on', x === b));
+    document.querySelectorAll('[data-panel]').forEach((p) => p.classList.toggle('hidden', p.dataset.panel !== b.dataset.tab));
+    $('#pageTitle').textContent = titles[b.dataset.tab];
+  };
+});
+
+let toastTimer = null;
+function toast(text) {
+  const t = $('#toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+async function post(body) {
+  const r = await fetch('/api/control', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+
+async function saveConfig(payload) {
+  const r = await fetch('/api/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const j = await r.json();
+  if (j.error) throw new Error(j.error);
+  return j;
+}
+
+function refreshPreview() {
+  const f = document.getElementById('preview');
+  if (f && f.src) f.contentWindow?.location.reload();
+}
+
+document.getElementById('previewLoad').onclick = (e) => {
+  const f = document.getElementById('preview');
+  f.src = f.dataset.src;
+  e.currentTarget.classList.add('loaded');
+  setTimeout(fitPreview, 400);
+};
+
+function fitPreview() {
+  const box = $('#previewBox');
+  const frame = $('#preview');
+  if (!box || !frame) return;
+  const s = box.clientWidth / 1080;
+  frame.style.transform = `scale(${s})`;
+}
+addEventListener('resize', fitPreview);
+
+async function loadVoices() {
+  if (voicesLoaded) return;
+  const d = await (await fetch('/api/voices')).json();
+  const opts = (d.voices || []).map((v) => `<option value="${v.id}">${v.name}</option>`).join('');
+  $('#fishVoice').innerHTML = opts;
+  $('#douVoice').innerHTML = opts;
+  voicesLoaded = true;
+}
+
+async function load() {
+  const d = await (await fetch('/api/state')).json();
+  ST = d;
+  const deb = d.debate || {};
+  const cfgScene = (d.scenes || {}).debate || {};
+  const status = d.status || {};
+
+  $('#connPill').textContent = status.status || '未连接';
+  $('#connPill').className = 'pill ' + (/已连接/.test(status.status || '') ? 'ok' : '');
+  const phaseMap = { idle: '未开始', opening: '开场立论', rebuttal: '交叉反驳', vote: '投票中', result: '结算' };
+  $('#phasePill').textContent = phaseMap[deb.phase] || deb.phase || '未开始';
+
+  $('#sTopic').textContent = deb.topic || '—';
+  $('#sTopic').title = deb.topic || '';
+  $('#sRound').textContent = `${deb.round || 0} / ${deb.totalRounds || deb.rounds || 2}`;
+  $('#sFish').textContent = deb.votes?.fish || 0;
+  $('#sDou').textContent = deb.votes?.doubao || 0;
+  const sc = deb.score || {};
+  const fishLabel = deb.names?.fish || '正方';
+  const douLabel = deb.names?.dou || '反方';
+  $('#scoreLine').textContent = `本场比分：${fishLabel} ${sc.fish || 0} : ${sc.doubao || 0} ${douLabel}` + (sc.draw ? ` · 平局 ${sc.draw}` : '');
+
+  if (!$('#room').value) $('#room').value = d.config?.douyin?.roomId || '';
+  if (!$('#banner').value) $('#banner').value = deb.banner || '';
+  if (!$('#hintText').value) $('#hintText').value = deb.hint || '';
+  if (!$('#debateRounds').dataset.touched) $('#debateRounds').value = deb.rounds || 2;
+  if (!$('#voteSec').dataset.touched) $('#voteSec').value = deb.voteSeconds || 20;
+
+  await loadVoices();
+  const actors = cfgScene.actors || {};
+  if (!$('#fishName').value) $('#fishName').value = actors.fish?.name || deb.names?.fish || '大鲵';
+  if (!$('#douName').value) $('#douName').value = actors.doubao?.name || deb.names?.dou || '豆包';
+  if (!voicesInit) {
+    // <select> 永远有值，不能用空值判断，否则会一直显示第一个音色
+    $('#fishVoice').value = actors.fish?.voice || d.config?.tts?.voice || '';
+    $('#douVoice').value = actors.doubao?.voice || '';
+    voicesInit = true;
+  }
+  if (!$('#douPersona').value) $('#douPersona').value = actors.doubao?.persona || '';
+  if (!$('#fishPersona').value) $('#fishPersona').value = actors.fish?.persona || '';
+  if (!$('#placeholderText').value) $('#placeholderText').value = (cfgScene.ui || {}).placeholder || '发一条弹幕，出个辩题';
+  if (!slidersInit) {
+    const setSide = (id, a) => {
+      $(`#${id}Rate`).value = Number.isFinite(Number(a.rate)) ? Number(a.rate) : 20;
+      $(`#${id}Vol`).value = Math.round((Number.isFinite(Number(a.volume)) ? Number(a.volume) : 1) * 100);
+      syncSliderLabels(id);
+    };
+    setSide('fish', actors.fish || {});
+    setSide('dou', actors.doubao || {});
+    slidersInit = true;
+  }
+  if (!idleInit) {
+    $('#idleTopics').value = (cfgScene.idle?.topics || []).join('\n');
+    $('#idleEnabled').checked = cfgScene.idle?.enabled !== false;
+    $('#idleMinSeconds').value = cfgScene.idle?.minSeconds ?? 90;
+    idleInit = true;
+  }
+
+  mergeActivities(d.debateActivity || []);
+  stageMusicOutputs = d.bgmOutputs || [];
+  renderBgm(d.bgm);
+}
+
+function renderBgm(bgm) {
+  if (!bgm) return;
+  const tracks = bgm.tracks || [];
+  if (tracks.length && !$('#bgmTrack').options.length) {
+    $('#bgmTrack').innerHTML = tracks.map((t, i) => `<option value="${i}">${t.title}</option>`).join('');
+  }
+  if (bgm.track) {
+    const idx = tracks.findIndex((t) => t.file === bgm.track);
+    if (idx >= 0) $('#bgmTrack').value = String(idx);
+  }
+  $('#bgmOutput').value = bgm.output === 'stage' ? 'stage' : 'console';
+  syncConsoleMusic(bgm);
+  if (Number.isFinite(Number(bgm.volume))) {
+    const v = Math.round(Number(bgm.volume) * 100);
+    if (!volumeSending && pendingVolume === null && document.activeElement !== $('#bgmVol')) {
+      $('#bgmVol').value = v;
+      $('#bgmVolVal').textContent = v + '%';
+    }
+  }
+}
+
+/* 连接 */
+$('#connectBtn').onclick = async () => {
+  const r = await post({ action: 'connect', roomId: $('#room').value.trim() });
+  toast(r.error ? r.error : '连接已发起');
+  load();
+};
+$('#conn2').onclick = () => $('#connectBtn').click();
+$('#disconnectBtn').onclick = async () => { await post({ action: 'disconnect' }); toast('已断开'); load(); };
+$('#openStream').onclick = () => window.open('/?scene=debate', '_blank');
+$('#tEnter').onclick = async () => { await post({ action: 'enter', name: '狂赚500亿' }); toast('已模拟进场'); };
+
+/* 一局 */
+$('#startBtn').onclick = async () => {
+  const topic = $('#topicTest').value.trim();
+  if (!topic) return toast('先写个辩题');
+  const r = await post({ action: 'debate-start', topic });
+  toast(r.error ? r.error : '已开局');
+  load();
+};
+$('#tallyBtn').onclick = async () => {
+  const r = await post({ action: 'debate-tally' });
+  toast(r.error ? r.error : '开票中…');
+};
+$('#scoreResetBtn').onclick = async () => { await post({ action: 'debate-score-reset' }); toast('比分已清零'); load(); };
+$('#stopBtn').onclick = async () => { await post({ action: 'debate-stop' }); toast('已结束本局'); };
+$('#voteFish').onclick = async () => { await post({ action: 'debate-vote', side: 'fish' }); };
+$('#voteDou').onclick = async () => { await post({ action: 'debate-vote', side: 'doubao' }); };
+
+/* 保存 */
+$('#saveRules').onclick = async () => {
+  const rounds = Number($('#debateRounds').value);
+  if (!Number.isInteger(rounds) || rounds < 1 || rounds > 30) return toast('辩论轮次请填 1–30 的整数');
+  await saveConfig({ debate: { banner: $('#banner').value, ui: { hint: $('#hintText').value, placeholder: $('#placeholderText').value }, rules: { voteSeconds: +$('#voteSec').value, rounds } } });
+  toast('已保存');
+  load();
+  refreshPreview();
+};
+$('#debateRounds').addEventListener('input', () => { $('#debateRounds').dataset.touched = '1'; });
+$('#voteSec').addEventListener('input', () => { $('#voteSec').dataset.touched = '1'; });
+
+$('#saveActors').onclick = async () => {
+  await saveConfig({ debate: { actors: {
+    fish: { name: $('#fishName').value, voice: $('#fishVoice').value, rate: +$('#fishRate').value, volume: +$('#fishVol').value / 100 },
+    doubao: { name: $('#douName').value, voice: $('#douVoice').value, rate: +$('#douRate').value, volume: +$('#douVol').value / 100 }
+  } } });
+  toast('已保存');
+  load();
+  refreshPreview();
+};
+
+$('#savePersona').onclick = async () => {
+  await saveConfig({ debate: { actors: { doubao: { persona: $('#douPersona').value } } } });
+  toast('人设已保存');
+  refreshPreview();
+};
+
+$('#saveFishPersona').onclick = async () => {
+  await saveConfig({ debate: { actors: { fish: { persona: $('#fishPersona').value } } } });
+  toast('正方人设已保存');
+  refreshPreview();
+};
+
+async function sendDanmu() {
+  const text = $('#testDanmu').value.trim();
+  if (!text) return toast('先写一条弹幕');
+  const button = $('#testDanmuBtn');
+  if (button.disabled) return;
+  button.disabled = true;
+  const status = $('#sendStatus');
+  status.textContent = '正在发送…';
+  try {
+    const r = await post({ action: 'simulate', name: $('#testName').value.trim() || '测试观众', text });
+    if (r.error || !r.ok) throw new Error(r.error || '发送失败');
+    status.textContent = '已收到弹幕，处理进度和角色回复会显示在下方。';
+    if ($('#testDanmu').value.trim() === text) $('#testDanmu').value = '';
+    await load();
+  } catch (err) {
+    status.textContent = `发送失败：${err.message}`;
+  } finally { button.disabled = false; }
+}
+$('#testDanmuBtn').onclick = sendDanmu;
+$('#testDanmu').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); sendDanmu(); }
+});
+
+$('#saveIdle').onclick = async () => {
+  const topics = $('#idleTopics').value.split('\n').map((s) => s.trim()).filter(Boolean);
+  if (topics.length > 8 || topics.some((s) => s.length > 60)) return toast('最多 8 个辩题，每题最多 60 字');
+  const seconds = Number($('#idleMinSeconds').value);
+  if (!Number.isFinite(seconds) || seconds < 0 || seconds > 3600) return toast('间隔请填 0–3600 秒');
+  await saveConfig({ debate: { idleTopics: topics, idleEnabled: $('#idleEnabled').checked, idleMinSeconds: seconds } });
+  toast('预设辩题已保存');
+  refreshPreview();
+};
+
+function syncSliderLabels(id) {
+  $('#' + id + 'RateVal').textContent = ($('#' + id + 'Rate').value > 0 ? '+' : '') + $('#' + id + 'Rate').value + '%';
+  $('#' + id + 'VolVal').textContent = $('#' + id + 'Vol').value + '%';
+}
+['fish', 'dou'].forEach((id) => {
+  $('#' + id + 'Rate').addEventListener('input', () => syncSliderLabels(id));
+  $('#' + id + 'Vol').addEventListener('input', () => syncSliderLabels(id));
+});
+
+async function audition(voice, rate, volume) {
+  if (!voice) return toast('先选一个音色');
+  toast('合成中…');
+  const url = '/api/tts?text=' + encodeURIComponent('这题我站这边，别跟我讲大道理') +
+    '&voice=' + encodeURIComponent(voice) + '&rate=' + encodeURIComponent(rate);
+  const r = await (await fetch(url)).json();
+  if (r.audio) {
+    const a = new Audio(r.audio);
+    a.volume = Math.max(0, Math.min(1, Number(volume)));
+    a.play().catch(() => toast('浏览器拦了声音，点一下页面'));
+  } else toast('语音合成失败');
+}
+$('#testFish').onclick = () => audition($('#fishVoice').value, $('#fishRate').value, $('#fishVol').value / 100);
+$('#testDou').onclick = () => audition($('#douVoice').value, $('#douRate').value, $('#douVol').value / 100);
+
+/* BGM：按钮展示真实播放器状态，无有声舞台时由工作台播放。 */
+const consoleMusic = $('#consoleBgm');
+let stageMusicOutputs = [];
+let consoleMusicEnabled = false;
+let consoleMusicError = '';
+let consoleMusicPending = false;
+function activeStageMusic() {
+  if (ST?.bgm?.output !== 'stage') return null;
+  return stageMusicOutputs.find(output => Date.now() - output.at < 10000 &&
+    !output.paused && !output.muted && !output.error && output.track === ST?.bgm?.track);
+}
+function clock(seconds) {
+  const n = Math.max(0, Math.floor(Number(seconds) || 0));
+  return `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}`;
+}
+function renderMusicPlayback() {
+  const stage = activeStageMusic();
+  const local = !consoleMusic.paused && consoleMusic.readyState >= 2 && !consoleMusicPending;
+  $('#bgmToggle').textContent = stage || local ? '暂停' : '播放';
+  const label = $('#bgmPlaybackStatus');
+  if (stage) label.textContent = `直播窗口正在播放 · ${clock(stage.currentTime)} / ${clock(stage.duration)}`;
+  else if (local) label.textContent = `工作台正在播放 · ${clock(consoleMusic.currentTime)} / ${clock(consoleMusic.duration)}`;
+  else if (consoleMusicError) label.textContent = consoleMusicError;
+  else if (consoleMusicPending) label.textContent = '正在加载音乐…';
+  else if (ST?.bgm?.playing) label.textContent = ST.bgm.output === 'stage' ? '等待直播窗口播放；请打开直播画面并开启声音' : '点击播放，在当前工作台开启音乐';
+  else label.textContent = '音乐已暂停';
+}
+function syncConsoleMusic(s) {
+  if (!s) return;
+  const file = s.track;
+  if (file && consoleMusic.dataset.file !== file) {
+    consoleMusic.dataset.file = file;
+    consoleMusic.src = '/assets/bgm/' + encodeURIComponent(file);
+    consoleMusicError = '';
+  }
+  consoleMusic.volume = Math.max(0, Math.min(1, (Number(s.volume) || 0) * (ST?.debate?.speaking ? 0.24 : 1)));
+  if (!s.playing || s.output === 'stage' || !consoleMusicEnabled) consoleMusic.pause();
+  else if (file && consoleMusic.paused && !consoleMusicPending) {
+    consoleMusicPending = true;
+    consoleMusic.play().then(() => { consoleMusicError = ''; }).catch((err) => {
+      consoleMusicError = err.name === 'NotAllowedError' ? '浏览器需要授权，点击播放开启声音' : `音乐播放失败：${err.message}`;
+    }).finally(() => { consoleMusicPending = false; renderMusicPlayback(); });
+  }
+  renderMusicPlayback();
+}
+for (const event of ['playing','pause','timeupdate','loadedmetadata','error']) consoleMusic.addEventListener(event, renderMusicPlayback);
+
+async function bgm(op, extra = {}) {
+  const r = await post({ action: 'bgm', op, ...extra });
+  if (r.bgm) {
+    // 必须同步回本地状态：按钮是拿 ST.bgm.playing 决定下次发 play 还是 pause 的。
+    // 以前只 renderBgm 不更新 ST，状态要等 4 秒轮询才刷新，
+    // 于是连点两下会连发两次 play —— 看起来就是「点暂停没反应」。
+    ST = { ...(ST || {}), bgm: r.bgm };
+    renderBgm(r.bgm);
+  }
+}
+$('#bgmToggle').onclick = () => {
+  const audible = activeStageMusic() || !consoleMusic.paused;
+  consoleMusicEnabled = !audible;
+  consoleMusicError = '';
+  // 在点击手势里直接 play，不能先等网络请求再申请浏览器播放权限。
+  const desired = { ...(ST?.bgm || {}), playing: !audible };
+  ST = { ...(ST || {}), bgm: desired };
+  syncConsoleMusic(desired);
+  bgm(audible ? 'pause' : 'play').catch(err => toast(`音乐控制失败：${err.message}`));
+};
+$('#bgmOutput').onchange = () => {
+  const output = $('#bgmOutput').value;
+  consoleMusicEnabled = output === 'console';
+  const desired = { ...(ST?.bgm || {}), output };
+  ST = { ...(ST || {}), bgm: desired };
+  syncConsoleMusic(desired);
+  bgm('output', { output }).catch(err => toast(`播放位置保存失败：${err.message}`));
+};
+$('#bgmNext').onclick = () => bgm('next');
+$('#bgmPrev').onclick = () => bgm('prev');
+$('#bgmTrack').onchange = () => bgm('select', { index: +$('#bgmTrack').value });
+// 拖动时持续提交；一次只发送一个请求，后续只保留最新值，避免旧请求覆盖。
+let volumeSending = false;
+let pendingVolume = null;
+let volumeTimer = null;
+async function flushVolume() {
+  clearTimeout(volumeTimer);
+  if (volumeSending || pendingVolume === null) return;
+  volumeSending = true;
+  const value = pendingVolume;
+  pendingVolume = null;
+  try {
+    const r = await post({ action: 'bgm', op: 'volume', volume: value });
+    if (r.error) throw new Error(r.error);
+    if (r.bgm) { ST = { ...(ST || {}), bgm: r.bgm }; syncConsoleMusic(r.bgm); }
+  } catch (err) { toast(`音量保存失败：${err.message}`); }
+  finally {
+    volumeSending = false;
+    if (pendingVolume !== null) flushVolume();
+  }
+}
+$('#bgmVol').addEventListener('input', () => {
+  const value = +$('#bgmVol').value;
+  $('#bgmVolVal').textContent = value + '%';
+  pendingVolume = value / 100;
+  clearTimeout(volumeTimer);
+  volumeTimer = setTimeout(flushVolume, 80);
+});
+$('#bgmVol').onchange = () => {
+  pendingVolume = +$('#bgmVol').value / 100;
+  flushVolume();
+};
+
+/* 实时监测：同一条弹幕的接收、判题和回复合并展示；刷新后从后端恢复。 */
+const activityEntries = new Map();
+function mergeActivities(entries) {
+  let changed = false;
+  for (const entry of entries) {
+    if (!activityEntries.has(entry.id)) { activityEntries.set(entry.id, entry); changed = true; }
+  }
+  if (!changed) return;
+  const ordered = [...activityEntries.values()].sort((a, b) => a.at - b.at || Number(a.id.split('-').at(-1)) - Number(b.id.split('-').at(-1)));
+  activityEntries.clear();
+  for (const entry of ordered.slice(-200)) activityEntries.set(entry.id, entry);
+  const rows = new Map();
+  for (const e of activityEntries.values()) {
+    const key = e.chatId || e.id;
+    const row = rows.get(key) || { at: e.at, name: e.name, text: e.text, tag: '弹幕', cls: '', status: '', reply: '' };
+    if (e.kind === 'received') { row.text = e.text; row.name = e.name; row.status = '已接收 · 等当前句说完后优先处理'; }
+    if (e.kind === 'judged') {
+      row.status = e.action === 'topic' ? `新辩题 · 开始辩论：${e.topic || e.text}` :
+        e.action === 'blocked' ? '这条内容会婉拒并回应' : '普通评论 · 正在准备回复，原辩题继续';
+    }
+    if (e.kind === 'responding') row.status = '正在准备回复';
+    if (e.kind === 'reply') {
+      row.reply = `${e.name || (e.side === 'doubao' ? ST?.debate?.names?.dou : ST?.debate?.names?.fish) || '角色'}：${e.text}`;
+      row.status = e.audio ? '已回复 · 已发送到舞台语音队列' : '已回复 · 文字已显示，语音暂不可用';
+      row.text = e.comment || row.text;
+    }
+    if (e.kind === 'line') { row.tag = '发言'; row.cls = e.side === 'doubao' ? 'dou' : 'fish'; row.status = ''; }
+    if (e.kind === 'member') { row.tag = '进场'; row.status = '当前句结束后，由角色欢迎'; }
+    if (e.kind === 'vote') { row.tag = '投票'; row.status = e.counted === false ? '当前没有进行中的比赛，未计票' : '已计票 · 支持率已更新'; }
+    if (e.kind === 'busy') row.status = '弹幕较多，暂未入队，请稍后再发';
+    if (e.kind === 'cancelled') row.status = '本局已结束，此条待处理弹幕已取消';
+    rows.set(key, row);
+  }
+  const html = [...rows.values()].reverse().map(row => {
+    const date = new Date(row.at);
+    const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+    return `<div class="ev"><time>${time}</time><span class="tag ${row.cls}">${row.tag}</span><p><b>${esc(row.name || '观众')}</b>：${esc(row.text || '')}` +
+      (row.status ? `<br><small style="color:#718179">${esc(row.status)}</small>` : '') +
+      (row.reply ? `<br><strong style="color:#237a52">${esc(row.reply)}</strong>` : '') + '</p></div>';
+  }).join('');
+  for (const id of ['#feedMini', '#feed']) $(id).innerHTML = html || '<div class="hint">还没有互动，发一条评论试试。</div>';
+}
+
+let es = null;
+function connectFeed() {
+  if (es) return;
+  es = new EventSource('/api/events');
+  es.onopen = () => { $('#monitorStatus').textContent = '● 实时监测已连接'; load(); };
+  es.onerror = () => { $('#monitorStatus').textContent = '实时连接重连中，记录仍会自动补齐'; };
+  es.addEventListener('debate-activity', (e) => {
+    try { mergeActivities([JSON.parse(e.data)]); } catch {}
+  });
+  es.addEventListener('interaction', (e) => {
+    try { window.aliveApplyInteraction?.(JSON.parse(e.data)); } catch {}
+  });
+  es.addEventListener('bgm', (e) => {
+    try { const music = JSON.parse(e.data); ST = { ...(ST || {}), bgm: music }; renderBgm(music); } catch {}
+  });
+  es.addEventListener('bgm-output', (e) => {
+    try { stageMusicOutputs = JSON.parse(e.data); syncConsoleMusic(ST?.bgm); } catch {}
+  });
+  es.addEventListener('debate', () => load());
+  es.addEventListener('toast', (e) => {
+    try { toast(JSON.parse(e.data).text); } catch { /* ignore */ }
+  });
+}
+function dropFeed() {
+  if (!es) return;
+  try { es.close(); } catch { /* ignore */ }
+  es = null;
+}
+// 切到后台就断开，别白占 Chrome 对同一域名的 6 条长连接名额
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) dropFeed();
+  else { connectFeed(); load(); }
+});
+connectFeed();
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+fitPreview();
+setTimeout(fitPreview, 300);
+setInterval(load, 4000);
+load();
+</script>
+</body>
+</html>

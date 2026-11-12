@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AI 辩论赛</title>
+<style>
+  *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  html,body{margin:0;height:100%;background:#04070c;overflow:hidden;
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif}
+  #viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#04070c;overflow:hidden}
+  #stage{position:relative;flex:none;width:1080px;height:1920px;overflow:hidden;transform-origin:center center;
+    background:
+      radial-gradient(1200px 820px at 50% -8%,rgba(120,170,255,.20),transparent 62%),
+      radial-gradient(900px 700px at 50% 106%,rgba(255,190,110,.10),transparent 60%),
+      linear-gradient(180deg,#0a1018 0%,#0b1420 46%,#04070c 100%);
+    color:#eef4fb}
+
+  /* ---------- 背景 ---------- */
+  .wall{position:absolute;inset:0;opacity:.5;background:
+    repeating-linear-gradient(90deg,rgba(120,190,255,.045) 0 1px,transparent 1px 58px),
+    repeating-linear-gradient(0deg,rgba(120,190,255,.035) 0 1px,transparent 1px 58px);
+    mask-image:linear-gradient(180deg,rgba(0,0,0,.9),transparent 72%)}
+  .beam{position:absolute;top:-160px;width:440px;height:1400px;filter:blur(12px);opacity:.5;pointer-events:none}
+  .beam.l{left:-60px;transform:rotate(11deg);
+    background:linear-gradient(180deg,rgba(120,190,255,.40),transparent 72%);
+    clip-path:polygon(44% 0,56% 0,100% 100%,0 100%)}
+  .beam.r{right:-60px;transform:rotate(-11deg);
+    background:linear-gradient(180deg,rgba(255,180,140,.34),transparent 72%);
+    clip-path:polygon(44% 0,56% 0,100% 100%,0 100%)}
+  .ring{position:absolute;left:50%;top:700px;transform:translate(-50%,-50%);width:720px;height:720px;border-radius:50%;
+    border:1px solid rgba(150,200,255,.14);box-shadow:0 0 90px rgba(90,150,255,.12),inset 0 0 130px rgba(90,150,255,.06);
+    background:radial-gradient(circle,rgba(30,60,100,.26),transparent 68%);pointer-events:none}
+  .floor{position:absolute;left:0;right:0;bottom:0;height:760px;pointer-events:none;
+    background:linear-gradient(180deg,rgba(8,12,18,0),rgba(6,10,15,.92) 52%,#03060a 100%)}
+  .led{position:absolute;top:240px;bottom:430px;width:8px;z-index:2;pointer-events:none;
+    background:linear-gradient(180deg,transparent,rgba(120,190,255,.5),rgba(255,180,140,.45),transparent);
+    box-shadow:0 0 24px rgba(120,190,255,.3)}
+  .led.l{left:40px}.led.r{right:40px}
+
+  /* ---------- 顶栏 ---------- */
+  .topbar{position:absolute;left:132px;right:132px;top:56px;display:flex;align-items:center;justify-content:flex-end;z-index:20}
+  .brand{display:flex;align-items:center;gap:16px}
+  .mark{width:58px;height:58px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+    font-size:28px;font-weight:900;color:#fff;background:linear-gradient(135deg,#2f8cff,#7b5cff);
+    box-shadow:0 12px 28px rgba(60,120,255,.34)}
+  .brand b{font-size:34px;letter-spacing:5px}
+  .brand small{display:block;font-size:15px;color:#7fa8c2;letter-spacing:3px;margin-top:3px}
+  .right{display:flex;align-items:center;gap:12px}
+  .conn{display:flex;align-items:center;gap:8px;font-size:17px;letter-spacing:1px;color:#8aa4b6;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:8px 16px}
+  .conn i{width:8px;height:8px;border-radius:50%;background:#7c8b96}
+  .conn.ok{color:#9fe8c0;border-color:rgba(80,220,150,.3);background:rgba(20,70,45,.45)}
+  .conn.ok i{background:#37d98a;box-shadow:0 0 12px #37d98a}
+  .live{display:flex;align-items:center;gap:9px;font-size:19px;letter-spacing:3px;color:#ff9fb4;
+    background:rgba(60,8,18,.55);border:1px solid rgba(255,110,150,.35);border-radius:999px;padding:9px 18px}
+  .live i{width:9px;height:9px;border-radius:50%;background:#ff4d70;box-shadow:0 0 14px #ff4d70;animation:pulse 1.4s infinite}
+  @keyframes pulse{50%{opacity:.32}}
+
+  /* ---------- 辩题大屏 ---------- */
+  .screen{position:absolute;left:132px;right:132px;top:176px;min-height:198px;padding:42px 56px;text-align:center;
+    border-radius:26px;z-index:15;
+    background:linear-gradient(180deg,rgba(12,30,46,.92),rgba(6,18,28,.95));
+    border:1px solid rgba(180,210,255,.30);
+    box-shadow:0 0 0 1px rgba(160,200,255,.08),0 30px 80px rgba(0,0,0,.6),inset 0 0 90px rgba(120,170,255,.06)}
+  .screen:after{content:"";position:absolute;left:11%;right:11%;bottom:13px;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(255,210,130,.45),transparent)}
+  /* 主题框：赛博朋克霓虹光边（渐变霓虹底边 + 两道反向扫光） */
+  .screen-marquee{position:absolute;left:-2px;top:-2px;width:calc(100% + 4px);height:calc(100% + 4px);
+    pointer-events:none;overflow:visible}
+  .screen-marquee rect{fill:none;rx:28;ry:28}
+  /* 底层光晕 */
+  .screen-marquee .mq-bloom{stroke:url(#mqNeon);stroke-width:10;opacity:.30;filter:blur(7px)}
+  /* 霓虹细边（青→紫→品红渐变） */
+  .screen-marquee .mq-rim{stroke:url(#mqNeon);stroke-width:2.4;
+    filter:drop-shadow(0 0 6px rgba(0,240,255,.95)) drop-shadow(0 0 20px rgba(216,43,255,.65));
+    animation:mqBreathe 3.2s ease-in-out infinite}
+  /* 两道反向扫光 */
+  .screen-marquee .mq-a{stroke:#ffffff;stroke-width:3.2;stroke-linecap:round;
+    stroke-dasharray:46 954;filter:drop-shadow(0 0 7px #00f0ff) drop-shadow(0 0 18px rgba(168,85,247,1));
+    animation:mqSweep 2.4s linear infinite}
+  @keyframes mqSweep{from{stroke-dashoffset:0}to{stroke-dashoffset:-1000}}
+  @keyframes mqBreathe{0%,100%{opacity:.72}50%{opacity:1}}
+  .topic{font-size:48px;font-weight:800;line-height:1.32;letter-spacing:2px;color:#f7fbff;
+    text-shadow:0 4px 26px rgba(0,0,0,.6);word-break:break-word}
+  .sub{margin-top:18px;display:flex;align-items:center;justify-content:center;gap:14px;
+    font-size:28px;letter-spacing:1px;color:#cfe6f5}
+  .sub em{font-style:normal;font-size:17px;letter-spacing:3px;color:#ffd884;
+    border:1px solid rgba(255,210,130,.42);border-radius:999px;padding:3px 12px;flex:none}
+  .sub span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .phase{position:absolute;right:24px;top:-15px;font-size:16px;letter-spacing:2px;padding:4px 14px;border-radius:999px;
+    background:#0b1a28;border:1px solid rgba(160,200,255,.28);color:#9fc4d8;white-space:nowrap}
+  .phase.vote{color:#ffd884;border-color:rgba(255,210,130,.5)}
+
+  /* ---------- 舞台 ---------- */
+  .arena{position:absolute;left:0;right:0;top:520px;bottom:486px;z-index:10;overflow:hidden}
+  .char{position:absolute;bottom:-12px;height:100%;display:flex;align-items:flex-end;justify-content:center;
+    transition:filter .3s,transform .3s}
+  .char.fish{left:132px;width:360px}
+  .char.dou{right:132px;width:360px}
+  .char .dou-layer{max-width:none;filter:drop-shadow(0 30px 56px rgba(0,0,0,.62))}
+  .fish-stack{position:absolute;left:0;right:0;bottom:0;top:0;pointer-events:none;
+    animation:breathe 4.4s ease-in-out infinite}
+  .fv{position:absolute;bottom:0;left:50%;transform:translateX(-50%);height:700px;width:auto;
+    opacity:0;transition:opacity .3s ease;max-width:none;
+    filter:drop-shadow(0 30px 56px rgba(0,0,0,.62))}
+  .fv.on{opacity:1}
+  .char.dou{height:calc(100% + 20px)}
+  .char.dou .dou-sway,
+  .char.dou .dou-breathe,
+  .char.dou .dou-talk,
+  .char.dou .dou-stack{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center}
+  /* 视频本身已经有自然动作，这里不再叠加程序动画（之前那份摇摆是给静态图用的） */
+  .char.dou .dou-sway,
+  .char.dou .dou-breathe,
+  .char.dou .dou-talk{animation:none;transform:none}
+  @keyframes sway{0%,100%{transform:rotate(-.7deg)}50%{transform:rotate(.7deg)}}
+  @keyframes talkBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  .dou-stack img{position:absolute;bottom:0;height:560px;width:auto;opacity:0;
+    transition:opacity .34s ease;pointer-events:none;
+    filter:drop-shadow(0 30px 56px rgba(0,0,0,.62))}
+  /* 视频版豆包的头身比比图片瘦，放大一点才和肥鱼看着搭 */
+  .dou-stack video{position:absolute;bottom:0;height:624px;width:auto;opacity:0;
+    transition:opacity .34s ease;pointer-events:none;
+    filter:drop-shadow(0 30px 56px rgba(0,0,0,.62))}
+  .dou-stack video.on{opacity:1}
+  .dou-stack img.on{opacity:1}
+  /* 呼吸/说话时的一点生命感 */
+  @keyframes breathe{50%{transform:translateY(-5px)}}
+  .char.speaking{filter:brightness(1.08)}
+
+  /* 辩手桌：木色桌面 + 前挡板 + 桌脚 */
+  .desk{position:absolute;bottom:0;width:360px;height:210px;z-index:14;
+    border-radius:6px 6px 4px 4px;
+    background:
+      repeating-linear-gradient(90deg,rgba(0,0,0,.12) 0 2px,transparent 2px 9px),
+      linear-gradient(180deg,#6b4a33 0%,#523826 52%,#2e1f15 100%);
+    border:1px solid rgba(255,214,160,.28);
+    box-shadow:0 -18px 46px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,238,210,.22)}
+  .desk:before{content:"";position:absolute;left:-18px;right:-18px;top:-24px;height:32px;border-radius:7px;
+    background:
+      repeating-linear-gradient(90deg,rgba(0,0,0,.10) 0 3px,transparent 3px 11px),
+      linear-gradient(180deg,#a87c4f,#79583a 58%,#4a3323);
+    border:1px solid rgba(255,224,175,.4);
+    box-shadow:0 14px 28px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,244,220,.4)}
+  .desk:after{content:"";position:absolute;left:8px;right:8px;top:8px;height:2px;
+    background:linear-gradient(90deg,transparent,rgba(255,222,175,.5),transparent)}
+  .desk .legs{position:absolute;left:10px;right:10px;bottom:0;height:14px;border-radius:3px;
+    background:linear-gradient(180deg,#3a281d,#1a110b);box-shadow:0 6px 16px rgba(0,0,0,.5)}
+  .desk.l{left:132px}
+  .desk.r{right:132px}
+  .desk .plate{position:absolute;left:0;right:0;bottom:26px;text-align:center;font-size:22px;letter-spacing:5px;
+    color:#ffe9c9;font-weight:400;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+  .desk.r .plate{color:#ffe4d6}
+  .desk .plate:before{content:"";position:absolute;left:50%;top:-14px;transform:translateX(-50%);
+    width:58%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,226,180,.45),transparent)}
+
+  .vs{position:absolute;left:50%;top:120px;transform:translateX(-50%);z-index:20;text-align:center}
+  .vs b{display:block;font-size:96px;font-weight:900;font-style:italic;letter-spacing:2px;color:#ffd166;
+    text-shadow:0 0 40px rgba(255,180,60,.5),0 10px 30px rgba(0,0,0,.6)}
+  .vs span{display:block;margin-top:-8px;font-size:19px;letter-spacing:8px;color:#ffd884;opacity:.8}
+  .vs:before{content:"";position:absolute;left:50%;top:46%;width:280px;height:280px;transform:translate(-50%,-50%);
+    border-radius:50%;border:1px solid rgba(255,210,120,.2);
+    background:radial-gradient(circle,rgba(255,190,80,.13),transparent 66%)}
+
+  /* ---------- 台词条（沿用 V1 的对话框语言，不挡脸） ---------- */
+  .dialog{position:absolute;left:132px;right:132px;bottom:246px;height:216px;overflow:hidden;z-index:30;
+    border-radius:22px;padding:20px 30px;
+    background:linear-gradient(180deg,rgba(8,20,30,.94),rgba(4,12,18,.96));
+    border:1px solid rgba(255,255,255,.13);
+    box-shadow:0 24px 60px rgba(0,0,0,.55);transition:border-color .3s}
+  .dialog.fish{border-color:rgba(95,196,255,.5);box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 0 1px rgba(95,196,255,.2)}
+  .dialog.dou{border-color:rgba(255,143,176,.5);box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 0 1px rgba(255,143,176,.2)}
+  .who{display:flex;align-items:center;gap:10px;font-size:20px;letter-spacing:3px;color:#8fb4c6}
+  .who b{font-weight:700}
+  .dialog.fish .who b{color:#8fdcff}
+  .dialog.dou .who b{color:#ffc0d2}
+  .who em{display:none}
+  .line{margin-top:10px;font-size:30px;line-height:1.4;color:#f2f8ff;font-weight:600;word-break:break-word;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .cursor{display:inline-block;width:3px;height:34px;margin-left:6px;vertical-align:-4px;
+    background:#5fc4ff;opacity:0;animation:blink 1s steps(1) infinite}
+  .dialog.on .cursor{opacity:1}
+  @keyframes blink{50%{opacity:0}}
+
+
+  /* 退！退！退！—— 输的一方被盖章 */
+  .stamp{position:absolute;top:1010px;z-index:45;font-size:180px;font-weight:900;line-height:1;
+    font-family:"STKaiti","Kaiti SC","KaiTi","Songti SC",serif;letter-spacing:6px;
+    color:rgba(255,70,84,.92);border:10px solid rgba(255,70,84,.85);border-radius:14px;
+    padding:10px 26px 18px;opacity:0;transform:scale(2.2) rotate(-15deg);pointer-events:none;
+    text-shadow:0 0 46px rgba(255,60,80,.55);box-shadow:0 0 60px rgba(255,60,80,.25) inset}
+  .stamp.on{animation:stampIn .26s cubic-bezier(.2,1.4,.5,1) forwards}
+  .stamp.left{left:150px}
+  .stamp.right{right:150px}
+  @keyframes stampIn{to{opacity:.96;transform:scale(1) rotate(-15deg)}}
+
+  /* ---------- 记分牌（浮在两位选手头顶上方） ---------- */
+  .score{position:absolute;left:132px;right:132px;top:468px;display:flex;gap:24px;z-index:35}
+  .card{flex:1;position:relative;border-radius:20px;padding:16px 24px 20px;overflow:hidden;
+    background:linear-gradient(180deg,rgba(10,30,44,.95),rgba(5,14,22,.98));
+    border:1px solid rgba(255,255,255,.12);transition:border-color .3s,box-shadow .3s}
+  .card.fish{border-color:rgba(120,190,255,.4)}
+  .card.dou{border-color:rgba(255,160,140,.4)}
+  .card.win{border-color:rgba(255,210,120,.85);box-shadow:0 0 0 1px rgba(255,210,120,.35),0 0 50px rgba(255,190,80,.25)}
+  .card .row{display:flex;align-items:baseline;justify-content:space-between;gap:14px}
+  .card b{font-size:54px;font-variant-numeric:tabular-nums;color:#eaf7ff;font-weight:800;flex:none}
+  .card.dou b{color:#ffe4ec}
+  .card .lbl{flex:1;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:20px;letter-spacing:2px;color:#8fb4c6}
+  .card .lbl i{font-style:normal;color:#d6e9f7}
+  .card .bar{display:block;margin-top:9px;height:8px;border-radius:6px;background:rgba(255,255,255,.08);overflow:hidden}
+  .card .bar em{display:block;height:100%;width:0;border-radius:6px;
+    background:linear-gradient(90deg,#2f9dff,#9fe4ff);transition:width .45s ease}
+  .card.dou .bar em{background:linear-gradient(90deg,#ff5f92,#ffc0d2)}
+  .hint{position:absolute;left:132px;right:132px;top:636px;text-align:center;font-size:19px;letter-spacing:3px;color:#7d9fb3;z-index:35}
+  .hint b{color:#ffd884;font-weight:600}
+
+  /* ---------- 桌宠挂件：大鲵桌右侧的饭团 + 豆包桌左侧的小鲸鱼 ---------- */
+  .desk .desk-rice{position:absolute;left:234px;top:-168px;width:150px;display:block;pointer-events:none;
+    filter:drop-shadow(0 10px 18px rgba(0,0,0,.55))}
+
+  /* ---------- 弹幕条 / toast / 声音门 ---------- */
+  .feed{position:absolute;left:132px;top:420px;width:520px;z-index:18;display:flex;flex-direction:column;gap:8px;
+    font-size:20px;line-height:1.5;color:#a9c6d8;pointer-events:none}
+  .feed.hidden{display:none}
+  .feed div{background:rgba(4,12,18,.72);border-radius:10px;padding:6px 12px;
+    animation:slideIn .25s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .feed b{color:#8fdcff;font-weight:600}
+  @keyframes slideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}
+  .toasts{position:absolute;left:0;right:0;top:690px;display:flex;flex-direction:column;align-items:center;gap:10px;z-index:60;pointer-events:none}
+  .toast{font-size:22px;padding:12px 26px;border-radius:12px;background:rgba(8,20,30,.94);
+    border:1px solid rgba(120,200,255,.3);color:#dff1ff;animation:slideIn .2s ease}
+  .toast.warn{border-color:rgba(255,150,120,.45);color:#ffd9cc}
+  .toast.success{border-color:rgba(90,220,160,.45);color:#c9ffe2}
+  .sound-gate{position:absolute;left:50%;bottom:196px;transform:translateX(-50%);z-index:70;
+    border:0;border-radius:999px;padding:9px 22px;font:inherit;font-size:18px;cursor:pointer;
+    background:rgba(255,210,120,.16);color:#ffe6b0;border:1px solid rgba(255,210,120,.45);backdrop-filter:blur(6px)}
+  .sound-gate.hidden{display:none}
+</style>
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+    <div class="wall"></div>
+    <div class="beam l"></div><div class="beam r"></div>
+    <div class="ring"></div>
+    <div class="floor"></div>
+    <div class="led l"></div><div class="led r"></div>
+
+    <div class="topbar">
+      <div class="right">
+        <div class="conn" id="conn"><i></i><span>弹幕未连接</span></div>
+        <div class="live"><i></i>LIVE</div>
+      </div>
+    </div>
+
+    <div class="screen">
+      <svg class="screen-marquee" aria-hidden="true">
+        <defs>
+          <linearGradient id="mqNeon" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#00f0ff"/>
+            <stop offset=".5" stop-color="#a855f7"/>
+            <stop offset="1" stop-color="#ff2bd6"/>
+          </linearGradient>
+        </defs>
+        <rect class="mq-bloom" x="0" y="0" width="100%" height="100%" pathLength="1000"/>
+        <rect class="mq-rim" x="0" y="0" width="100%" height="100%" pathLength="1000"/>
+        <rect class="mq-a" x="0" y="0" width="100%" height="100%" pathLength="1000"/>
+      </svg>
+      <div class="topic" id="topic">AI 辩论赛 · 谁更懂人类</div>
+      <div class="sub"><em>本期辩题</em><span id="topicNow">发一条弹幕，出个辩题</span></div>
+      <div class="phase" id="phase">未开始</div>
+    </div>
+
+    <div class="arena">
+      <div class="desk l">
+        <img class="desk-rice" src="/assets/pet/props/rice-ball.png" alt="">
+        <i class="legs"></i><b class="plate" id="lectFish">大鲵</b>
+      </div>
+      <div class="desk r"><i class="legs"></i><b class="plate" id="lectDou">豆包</b></div>
+      <div class="char fish" id="charFish">
+        <div class="fish-stack" id="fishStack"></div>
+      </div>
+      <div class="char dou" id="charDou">
+        <div class="dou-sway" id="douSway">
+          <div class="dou-breathe">
+            <div class="dou-talk" id="douTalk">
+              <div class="dou-stack on-air" id="douStack">
+                <video id="douVideo" class="on" autoplay loop muted playsinline preload="auto"
+                       src="/assets/doubao-motion/idle.webm"></video>
+                <video id="douTalkVid" loop muted playsinline preload="auto"
+                       src="/assets/doubao-motion/talk.webm"></video>
+                <img id="douA" src="/assets/doubao2.png" alt="">
+                <img id="douB" alt="">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog" id="dialog">
+      <div class="who"><b id="who">大鲵</b><em id="whoTag">正方</em></div>
+      <div class="line"><span id="line">等你出题。</span><span class="cursor"></span></div>
+    </div>
+
+    <div class="score">
+      <div class="card fish" id="cardFish">
+        <div class="row"><b id="vFish">0</b><span class="lbl">扣 1 · <i id="nFish">大鲵</i></span></div>
+        <i class="bar"><em id="barFish"></em></i>
+      </div>
+      <div class="card dou" id="cardDou">
+        <div class="row"><b id="vDou">0</b><span class="lbl">扣 2 · <i id="nDou">豆包</i></span></div>
+        <i class="bar"><em id="barDou"></em></i>
+      </div>
+    </div>
+    <div class="hint" id="hint">发弹幕出题 · 支持谁扣 1 / 2</div>
+
+    <div class="feed hidden" id="feed"></div>
+    <div class="toasts" id="toasts"></div>
+    <button id="soundGate" class="sound-gate hidden">🔊 点一下开启声音</button>
+    <audio id="audio" preload="auto"></audio>
+    <audio id="bgm" preload="auto" loop></audio>
+  </div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const params = new URLSearchParams(location.search);
+const muted = params.get('mute') === '1';
+const stage = $('#stage');
+
+const el = {
+  topic: $('#topic'), topicNow: $('#topicNow'), phase: $('#phase'), dialog: $('#dialog'), who: $('#who'), whoTag: $('#whoTag'), line: $('#line'),
+  vFish: $('#vFish'), vDou: $('#vDou'), barFish: $('#barFish'), barDou: $('#barDou'),
+  cardFish: $('#cardFish'), cardDou: $('#cardDou'), nFish: $('#nFish'), nDou: $('#nDou'),
+  lectFish: $('#lectFish'), lectDou: $('#lectDou'), charFish: $('#charFish'), charDou: $('#charDou'),
+  fishStack: $('#fishStack'), douA: $('#douA'), douB: $('#douB'), douStack: $('#douStack'),
+  douVideo: $('#douVideo'), douTalkVid: $('#douTalkVid'), douSway: $('#douSway'), douTalk: $('#douTalk'),
+  hint: $('#hint'), conn: $('#conn'), feed: $('#feed'), toasts: $('#toasts'),
+  screen: $('.screen'), score: $('.score'),
+  audio: $('#audio'), bgm: $('#bgm')
+};
+
+if (params.get('feed') === '1') el.feed.classList.remove('hidden');
+
+// 底部漂浮微尘
+(function makeDust() {
+  const box = document.getElementById('dust');
+  if (!box) return;
+  for (let i = 0; i < 16; i += 1) {
+    const d = document.createElement('i');
+    d.style.left = (4 + Math.random() * 92).toFixed(1) + '%';
+    d.style.top = (52 + Math.random() * 36).toFixed(1) + '%';
+    d.style.animationDelay = (-Math.random() * 14).toFixed(1) + 's';
+    d.style.animationDuration = (10 + Math.random() * 8).toFixed(1) + 's';
+    d.style.opacity = '0';
+    box.append(d);
+  }
+})();
+
+/* 缩放：和 V1 一样按 1080×1920 等比 */
+function fit() {
+  const s = Math.min(innerWidth / 1080, innerHeight / 1920);
+  stage.style.transform = `scale(${s})`;
+}
+addEventListener('resize', fit);
+fit();
+
+/* 记分牌和底部提示跟着「本期主题」大屏的下沿排：
+   主题一换行大屏就变高，写死的 top 会被压住，所以按实际高度算 */
+function placeUnderScreen() {
+  if (!el.screen || !el.score) return;
+  const scoreTop = el.screen.offsetTop + el.screen.offsetHeight + 92;
+  el.score.style.top = `${scoreTop}px`;
+  const hintTop = scoreTop + el.score.offsetHeight + 44;
+  el.hint.style.top = `${hintTop}px`;
+  // toast 排在提示下面，别压在记分牌上
+  el.toasts.style.top = `${hintTop + el.hint.offsetHeight + 26}px`;
+}
+placeUnderScreen();
+
+/* ---------------- 情绪 → 素材 ---------------- */
+// 直接写中文文件名，拼 URL 时统一 encodeURIComponent（手写百分号编码出过错）
+// 只用「首尾帧一致、能无缝循环」的素材：
+//   待机呼吸休闲（末帧闭眼）、工作状态-思考冒泡（15 帧）、骑木马（1 帧）都是坏素材，别用
+const FISH_CLIP = {
+  // 素材全部为官方完整版（241 帧 / 10 秒），垂头叹气是 118 帧的短片，按一次性动作播放
+  neutral: '摇扇纳凉.webm',
+  smug: '点击回应-傲娇生气.webm',
+  angry: '玩游戏气急败坏.webm',
+  happy: '点击回应-开心跃动.webm',
+  sad: '工作状态-垂头叹气冒汗.webm',
+  shock: '被吓一跳.webm',
+  // 「对屏碎碎念」是真正的说话动作：正面站姿、嘴一张一合，首尾帧差异 1.1%
+  talk: '碎碎念-对屏碎碎念.webm'
+};
+const petUrl = (file) => `/assets/pet/${encodeURIComponent(file)}`;
+const DOU_IMG = {
+  neutral: '/assets/doubao/neutral.png',
+  happy: '/assets/doubao/happy.png',
+  angry: '/assets/doubao/angry.png',
+  sad: '/assets/doubao/sad.png',
+  shock: '/assets/doubao/shock.png',
+  smug: '/assets/doubao/smug.png'
+};
+
+const PET = new Map();
+let petBase = FISH_CLIP.neutral;
+let petTimer = null;
+
+function petEl(name, loop = true) {
+  const key = `${name}|${loop ? 'loop' : 'once'}`;
+  if (PET.has(key)) return PET.get(key);
+  const v = document.createElement('video');
+  v.className = 'fv';
+  v.muted = true;
+  v.loop = loop;
+  v.playsInline = true;
+  v.preload = 'auto';
+  v.src = petUrl(name);
+  el.fishStack.append(v);
+  PET.set(key, v);
+  v.play?.().catch(() => {});
+  return v;
+}
+
+let fishTalkTimer = null;
+let fishLineTimer = null;
+
+function fishSpeak(mood) {
+  clearTimeout(fishTalkTimer);
+  const emo = FISH_CLIP[mood];
+  if (emo && mood !== 'neutral' && emo !== petBase && emo !== FISH_CLIP.talk) {
+    petShow(emo);                                   // 先做个反应表情
+    fishTalkTimer = setTimeout(() => petShow(FISH_CLIP.talk), 1600); // 再开始动嘴
+  } else {
+    petShow(FISH_CLIP.talk);
+  }
+}
+
+function fishIdle() {
+  clearTimeout(fishTalkTimer);
+  clearTimeout(fishLineTimer);
+  petShow(petBase);
+}
+
+function petShow(name) {
+  const target = petEl(name, true);
+  for (const v of PET.values()) v.classList.remove('on');
+  target.classList.add('on');
+  if (target.paused) target.play?.().catch(() => {});
+}
+
+// 一次性动作：播完自己的长度就回基础动作；不循环，所以不会“重新开始”
+function petPlay(name) {
+  if (!name || name === petBase) {
+    petShow(petBase);
+    return;
+  }
+  const v = petEl(name, false);
+  clearTimeout(petTimer);
+  v.currentTime = 0;
+  v.play?.().catch(() => {});
+  for (const other of PET.values()) other.classList.remove('on');
+  v.classList.add('on');
+  const back = () => {
+    clearTimeout(petTimer);
+    petShow(petBase);
+  };
+  v.onended = back;
+  petTimer = setTimeout(back, 10000);
+}
+
+petShow(petBase);
+
+let douCur = 0;
+const layers = [el.douA, el.douB];
+let douSpeaking = false;
+let douTalkTimer = null;
+let douLineTimer = null;
+
+function douVideoShow(which) {
+  const idle = el.douVideo;
+  const talk = el.douTalkVid;
+  if (!idle) return;
+  layers.forEach((l) => l.classList.remove('on'));
+  const useTalk = which === 'talk' && douTalkOk && !!talk;
+  const on = useTalk ? talk : idle;
+  const off = useTalk ? idle : talk;
+  idle.classList.toggle('on', !useTalk);
+  talk?.classList.toggle('on', useTalk);
+  off?.pause?.();
+  if (on.paused) on.play?.().catch(() => {});
+}
+
+function douSpeak() {
+  clearTimeout(douTalkTimer);
+  // 豆包一开口就直接播放说话视频，不展示情绪图、不延迟。
+  douVideoShow('talk');
+}
+
+function douShow(mood) {
+
+  // 常态：播喝咖啡的视频；有情绪时才切回图片
+  if (!mood || mood === 'neutral') {
+    if (douVideoOk) {
+      layers.forEach((l) => l.classList.remove('on'));
+      douVideoShow(douSpeaking ? 'talk' : 'idle');
+      return;
+    }
+    mood = 'neutral';
+  }
+  el.douVideo?.classList.remove('on');
+  el.douTalkVid?.classList.remove('on');
+  el.douTalkVid?.pause?.();
+  const url = DOU_IMG[mood] || DOU_IMG.neutral;
+  const next = 1 - douCur;
+  if (layers[douCur].getAttribute('src') === url && layers[douCur].classList.contains('on')) return;
+  layers[next].src = url;
+  layers[next].classList.add('on');
+  layers[douCur].classList.remove('on');
+  douCur = next;
+}
+Object.values(DOU_IMG).forEach((u) => { const i = new Image(); i.src = u; });
+
+let douVideoOk = true;
+el.douVideo?.addEventListener('error', () => {
+  douVideoOk = false;
+  douShow('neutral');
+});
+// 说话视频挂了就退回 idle，别让豆包卡在不动
+let douTalkOk = !!el.douTalkVid;
+el.douTalkVid?.addEventListener('error', () => {
+  douTalkOk = false;
+  douShow('neutral');
+});
+douShow('neutral');
+
+/* ---------------- 音频：队列 + 声音门 + BGM 闪避（照 V1 的做法） ---------------- */
+const queue = [];
+let playing = false;
+let bgmBase = 0.22;
+let bgmState = { playing: false, volume: 0.22, tracks: [] };
+
+function bgmDuck(on) {
+  el.bgm.volume = Math.max(0, Math.min(1, bgmBase * (on ? 0.24 : 1)));
+}
+const playbackClient = crypto.randomUUID();
+let activeLine = null;
+let playbackTimer = null;
+let latestRun = 0;
+const seenLines = new Set();
+let lastEnqueue = { url: '', at: 0 };
+
+function reportPlayback(item, status) {
+  if (muted || !item?.id) return;
+  fetch('/api/control', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'debate-playback', id: item.id, clientId: playbackClient, status }),
+    keepalive: true
+  }).catch(() => {});
+}
+function enqueueLine(item) {
+  if (item.run !== undefined && item.run < latestRun) return;
+  if (item.id && seenLines.has(item.id)) return;
+  if (item.id) {
+    seenLines.add(item.id);
+    if (seenLines.size > 300) seenLines.delete(seenLines.values().next().value);
+  }
+  latestRun = Math.max(latestRun, item.run || 0);
+  queue.push(item);
+  playNext();
+}
+// 保留音频试听入口；正式台词以整条消息入队，字幕/动作和音频一起切换。
+function enqueue(url, volume) {
+  if (!url || (url === lastEnqueue.url && Date.now() - lastEnqueue.at < 1200)) return;
+  lastEnqueue = { url, at: Date.now() };
+  enqueueLine({ audio: url, volume });
+}
+function finishPlayback(status = 'ended') {
+  const item = activeLine;
+  if (!item) return;
+  activeLine = null;
+  clearTimeout(playbackTimer);
+  el.audio.pause();
+  el.audio.removeAttribute('src');
+  el.audio.load();
+  clearTimeout(fishLineTimer);
+  clearTimeout(douLineTimer);
+  fishIdle();
+  douShutUp();
+  setSpeaking(null);
+  reportPlayback(item, status);
+  playing = false;
+  bgmDuck(false);
+  playNext();
+}
+function stopPlayback(run = latestRun) {
+  latestRun = Math.max(latestRun, run || 0);
+  queue.length = 0;
+  const item = activeLine;
+  activeLine = null;
+  clearTimeout(playbackTimer);
+  clearTimeout(fishLineTimer);
+  clearTimeout(douLineTimer);
+  clearTimeout(showLine.timer);
+  el.audio.pause();
+  el.audio.removeAttribute('src');
+  el.audio.load();
+  reportPlayback(item, 'error');
+  playing = false;
+  fishIdle();
+  douShutUp();
+  setSpeaking(null);
+  el.dialog.classList.remove('on');
+  bgmDuck(false);
+}
+async function playNext() {
+  if (playing) return;
+  const item = queue.shift();
+  if (!item) { bgmDuck(false); return; }
+  playing = true;
+  activeLine = item;
+  if (item.side) showLine(item.side, item.text, item.mood);
+  bgmDuck(true);
+  reportPlayback(item, 'started');
+  const timeout = item.audio ? (item.maxMs || 45000) :
+    (item.fallbackMs || Math.min(14000, Math.max(2500, String(item.text || '').length * 240 + 1200)));
+  playbackTimer = setTimeout(() => {
+    if (activeLine === item) finishPlayback(item.audio ? 'error' : 'ended');
+  }, timeout);
+  if (!item.audio) return;
+  // 有音频就以实际 ended 为准，不能按字数先停嘴。
+  clearTimeout(fishLineTimer);
+  clearTimeout(douLineTimer);
+  clearTimeout(showLine.timer);
+  el.audio.volume = Number.isFinite(Number(item.volume)) ? Math.max(0, Math.min(1, Number(item.volume))) : 1;
+  el.audio.src = item.audio;
+  el.audio.muted = muted;
+  try {
+    await el.audio.play();
+    if (activeLine !== item) return;
+    $('#soundGate').classList.add('hidden');
+  } catch (err) {
+    if (activeLine !== item) return;
+    if (err.name === 'NotAllowedError') {
+      $('#soundGate').classList.remove('hidden');
+      toast('浏览器拦截了声音，点一下开启', 'warn');
+    }
+    finishPlayback('error');
+  }
+}
+el.audio.addEventListener('ended', () => finishPlayback());
+el.audio.addEventListener('error', () => { if (activeLine?.audio) finishPlayback('error'); });
+addEventListener('pointerdown', () => {
+  if (!playing) playNext();
+  if (el.bgm.paused && bgmState.playing && !muted) applyBgm(bgmState);
+});
+$('#soundGate').addEventListener('click', () => {
+  $('#soundGate').classList.add('hidden');
+  if (bgmState.playing && !muted) applyBgm(bgmState);
+  playNext();
+});
+
+let bgmPlayPending = false;
+let bgmPlayError = '';
+function reportBgmOutput() {
+  if (muted) return;
+  fetch('/api/control', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'bgm-output', clientId: playbackClient,
+      paused: el.bgm.paused || el.bgm.readyState < 2, muted: el.bgm.muted, currentTime: el.bgm.currentTime,
+      duration: Number.isFinite(el.bgm.duration) ? el.bgm.duration : 0,
+      track: el.bgm.dataset.file || '', error: bgmPlayError || el.bgm.error?.message || '' })
+  }).catch(() => {});
+}
+for (const event of ['playing','pause','error']) el.bgm.addEventListener(event, reportBgmOutput);
+setInterval(reportBgmOutput, 3000);
+function applyBgm(s) {
+  if (!s) return;
+  bgmState = { ...bgmState, ...s };
+  const file = bgmState.track;
+  if (!file) { el.bgm.pause(); return; }
+  bgmBase = Number.isFinite(Number(bgmState.volume)) ? Number(bgmState.volume) : bgmBase;
+  const url = '/assets/bgm/' + encodeURIComponent(file);
+  if (el.bgm.dataset.file !== file) {
+    el.bgm.dataset.file = file;
+    el.bgm.src = url;
+    bgmPlayError = '';
+    bgmPlayPending = false;
+  }
+  bgmDuck(playing);
+  el.bgm.muted = muted;
+  if (bgmState.playing && bgmState.output !== 'console' && !muted) {
+    // 同曲状态同步只更新音量；play() 自己等待缓冲，不调用 load() 重置进度。
+    if (el.bgm.paused && !bgmPlayPending) {
+      bgmPlayPending = true;
+      el.bgm.play().then(() => {
+        bgmPlayError = '';
+        reportBgmOutput();
+      }).catch((err) => {
+        bgmPlayError = err.name === 'NotAllowedError' ? '浏览器拦截自动播放，请点击直播画面开启声音' : err.message;
+        if (err.name === 'NotAllowedError') $('#soundGate').classList.remove('hidden');
+        reportBgmOutput();
+      }).finally(() => { bgmPlayPending = false; });
+    }
+  } else if (!el.bgm.paused) {
+    el.bgm.pause();
+  }
+}
+
+function toast(text, tone = 'info') {
+  const d = document.createElement('div');
+  d.className = `toast ${tone}`;
+  d.textContent = text;
+  el.toasts.append(d);
+  setTimeout(() => {
+    d.style.transition = 'opacity .35s';
+    d.style.opacity = '0';
+    setTimeout(() => d.remove(), 380);
+  }, 2600);
+}
+
+/* ---------------- 渲染 ---------------- */
+let st = {
+  phase: 'idle', topic: '', votes: { fish: 0, doubao: 0 }, names: { fish: '大鲵', dou: '豆包' },
+  banner: 'AI 辩论赛 · 谁更懂人类', hint: '发弹幕出题 · 支持谁扣 1 / 2', deadline: 0, verdict: null
+};
+
+function render(d) {
+  if (!d) return;
+  st = { ...st, ...d };
+  const names = st.names || {};
+  const fishName = names.fish || '大鲵';
+  const douName = names.dou || '豆包';
+  el.topic.textContent = st.banner || 'AI 辩论赛 · 谁更懂人类';
+  el.topicNow.textContent = st.topic || st.placeholder || '发一条弹幕，出个辩题';
+  const sc = st.score || {};
+  el.nFish.textContent = fishName + (sc.fish ? ` · ${sc.fish}胜` : '');
+  el.nDou.textContent = douName + (sc.doubao ? ` · ${sc.doubao}胜` : '');
+  el.lectFish.textContent = fishName;
+  el.lectDou.textContent = douName;
+  el.hint.textContent = st.hint || '发弹幕出题 · 支持谁扣 1 / 2';
+
+  const f = st.votes?.fish || 0;
+  const dv = st.votes?.doubao || 0;
+  const total = Math.max(1, f + dv);
+  el.vFish.textContent = f;
+  el.vDou.textContent = dv;
+  el.barFish.style.width = `${(f / total) * 100}%`;
+  el.barDou.style.width = `${(dv / total) * 100}%`;
+  el.cardFish.classList.toggle('win', st.phase === 'result' && st.verdict === 'fish');
+  el.cardDou.classList.toggle('win', st.phase === 'result' && st.verdict === 'doubao');
+
+  const PHASE_TEXT = { idle: '未开始', opening: '开场立论', rebuttal: '交叉反驳', vote: '投票中', result: '结算' };
+  if (st.phase === 'result') {
+    const win = st.verdict === 'fish' ? fishName : st.verdict === 'doubao' ? douName : null;
+    setPhase(st.phase, win ? `本轮 ${win} 获胜` : '平局');
+  } else if (st.phase === 'vote') {
+    setPhase('vote', '投票中');
+    tickVote();
+  } else {
+    setPhase(st.phase, PHASE_TEXT[st.phase] || st.phase);
+  }
+
+  // 主题 / 提示文案改完，大屏高度会变，记分牌跟着重新定位
+  placeUnderScreen();
+}
+
+function setPhase(phase, text) {
+  el.phase.textContent = text;
+  el.phase.classList.toggle('vote', phase === 'vote');
+}
+
+function tickVote() {
+  if (st.phase !== 'vote' || !st.deadline) return;
+  const left = Math.max(0, Math.ceil((st.deadline - Date.now()) / 1000));
+  el.phase.textContent = `投票中 ${left}s · 扣 1 / 扣 2`;
+  el.phase.classList.add('vote');
+}
+setInterval(tickVote, 250);
+
+// 豆包「说完了」的统一出口：音频 ended 会调它，按字数估的兜底定时器也会调它。
+// 没有音频（TTS 失败 / 浏览器拦了自动播放）时 ended 永远不来，只能靠定时器收尾，
+// 否则 talk 视频会一直循环、嘴一直动。
+function douShutUp() {
+  clearTimeout(douLineTimer);
+  clearTimeout(douTalkTimer);
+  if (!douSpeaking) return;
+  douSpeaking = false;
+  el.charDou.classList.remove('talking');
+  douShow('neutral');
+}
+
+function setSpeaking(side) {
+  if (side === 'doubao') fishIdle();
+  douSpeaking = side === 'doubao';
+  clearTimeout(douTalkTimer);
+  if (side === 'fish') { clearTimeout(douLineTimer); douShow('neutral'); }
+  el.charFish.classList.toggle('speaking', side === 'fish');
+  el.charDou.classList.toggle('speaking', side === 'doubao');
+  el.charDou.classList.toggle('talking', side === 'doubao');
+  el.charDou.classList.toggle('listening', side === 'fish');
+  el.dialog.classList.toggle('fish', side === 'fish');
+  el.dialog.classList.toggle('dou', side === 'doubao');
+}
+
+let lastSpeaker = null;
+
+function showLine(side, text, mood) {
+  lastSpeaker = side;
+  const names = st.names || {};
+  const isDou = side === 'doubao';
+  el.who.textContent = isDou ? names.dou || '豆包' : names.fish || '大鲵';
+  el.whoTag.textContent = isDou ? '反方' : '正方';
+  el.line.textContent = text;
+  el.dialog.classList.add('on');
+  setSpeaking(side);
+  if (isDou) douSpeak(mood);
+  else fishSpeak(mood);
+  // 按字数估一句该说多久（和服务端 say() 的节奏一致），到点强制收尾。
+  // 大鲵和豆包都要：没有音频（TTS 失败 / 自动播放被拦）时 ended 永远不来，
+  // 不留兜底就会一直卡在「说话」动作里。
+  const sayMs = Math.min(14000, Math.max(2500, String(text || '').length * 240 + 1200));
+  clearTimeout(douLineTimer);
+  clearTimeout(fishLineTimer);
+  if (isDou) douLineTimer = setTimeout(douShutUp, sayMs);
+  else fishLineTimer = setTimeout(() => { if (lastSpeaker === 'fish') fishIdle(); }, sayMs);
+  clearTimeout(showLine.timer);
+  showLine.timer = setTimeout(() => el.dialog.classList.remove('on'), 6000);
+}
+
+/* ---------------- SSE ---------------- */
+let feed = null;
+const embed = params.get('embed') === '1';
+if (embed) {
+  // 控制台缩略预览：轮询代替 SSE，给浏览器省下一条长连接
+  const pull = async () => {
+    try {
+      const d = await (await fetch('/api/state', { cache: 'no-store' })).json();
+      render(d.debate);
+      applyBgm(d.bgm);
+    } catch {
+      /* ignore */
+    }
+  };
+  pull();
+  setInterval(pull, 2000);
+} else {
+feed = new EventSource('/api/events');
+feed.addEventListener('interaction', (e) => {
+  try { window.aliveApplyInteraction?.(JSON.parse(e.data)); } catch {}
+});
+feed.addEventListener('interaction-stop', () => stopPlayback());
+feed.addEventListener('debate', (e) => {
+  let d = {};
+  try { d = JSON.parse(e.data); } catch { return; }
+  render(d);
+});
+feed.addEventListener('debate-line', (e) => {
+  let m = {};
+  try { m = JSON.parse(e.data); } catch { return; }
+  enqueueLine(m);
+});
+feed.addEventListener('debate-stop', (e) => {
+  try { stopPlayback(JSON.parse(e.data).run); } catch { stopPlayback(); }
+});
+feed.addEventListener('scene', (e) => {
+  try { if (JSON.parse(e.data).scene !== 'debate') stopPlayback(); } catch {}
+});
+feed.addEventListener('status', (e) => {
+  let s = {};
+  try { s = JSON.parse(e.data); } catch { return; }
+  const ok = /已连接/.test(s.status || '');
+  el.conn.classList.toggle('ok', ok);
+  el.conn.querySelector('span').textContent = s.status || '弹幕未连接';
+});
+feed.addEventListener('toast', (e) => {
+  try { const t = JSON.parse(e.data); toast(t.text, t.tone); } catch { /* ignore */ }
+});
+feed.addEventListener('danmaku', (e) => {
+  let m = {};
+  try { m = JSON.parse(e.data); } catch { return; }
+  const div = document.createElement('div');
+  const b = document.createElement('b');
+  b.textContent = m.name || '观众';
+  div.append(b, document.createTextNode('：' + (m.text || '')));
+  el.feed.append(div);
+  while (el.feed.children.length > 6) el.feed.firstChild.remove();
+  setTimeout(() => {
+    div.style.transition = 'opacity .4s';
+    div.style.opacity = '0';
+    setTimeout(() => div.remove(), 420);
+  }, 9000);
+});
+feed.addEventListener('debate-result', (e) => {
+  let r = {};
+  try { r = JSON.parse(e.data); } catch { return; }
+  if (!r.loser) {
+    toast('平局 · 谁也没说服谁', 'warn');
+    return;
+  }
+  const loserName = r.loser === 'fish' ? (st.names?.fish || '大鲵') : (st.names?.dou || '豆包');
+  toast(`${loserName} 认输 · 本场 ${r.score?.fish || 0} : ${r.score?.doubao || 0}`, 'info');
+});
+
+feed.addEventListener('bgm', (e) => {
+  try { applyBgm(JSON.parse(e.data)); } catch { /* ignore */ }
+});
+}
+
+// 直播舞台切到后台也必须保持连接和播放。回到窗口时重新加载会截断人物语音。
+// 控制台可以按可见性断开监测，舞台不能套用这条节流策略。
+window.aliveSpeechBusy = () => playing || queue.length > 0;
+addEventListener('alive-interaction', e => {
+  if (!e.detail.enabled) { stopPlayback(); bgmState.playing = false; el.bgm.pause(); }
+});
+
+fetch('/api/state')
+  .then((r) => r.json())
+  .then((d) => {
+    render(d.debate);
+    applyBgm(d.bgm);
+    if (d.status) {
+      const ok = /已连接/.test(d.status.status || '');
+      el.conn.classList.toggle('ok', ok);
+      el.conn.querySelector('span').textContent = d.status.status || '弹幕未连接';
+    }
+  })
+  .catch(() => {});
+</script>
+</body>
+</html>

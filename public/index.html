@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>大鲵 · 直播间</title>
+<style>
+  :root{
+    --ink:#f3f0e6;
+    --cream:#f0e2c0;
+    --muted:#9fb9c2;
+    --line:rgba(255,255,255,.10);
+    --panel:rgba(9,38,50,.82);
+    --panel-2:rgba(7,30,42,.9);
+    --green:#2f7d5c;
+    --green-2:#1f5540;
+    --gold:#e6cf95;
+    --shadow:0 18px 50px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  html,body{margin:0;height:100%;background:#04161d;overflow:hidden;font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif}
+  #viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#04161d}
+  #stage{
+    position:relative;flex:none;width:1080px;height:1920px;transform-origin:center center;
+    background:
+      radial-gradient(1200px 900px at 50% 38%, #1d5a6b 0%, #123e4d 42%, #0b2a37 72%, #071e29 100%);
+    color:var(--ink);overflow:hidden;
+  }
+  /* 背景气泡 */
+  .bokeh{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+  .bokeh i{position:absolute;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(190,235,255,.55),rgba(120,200,230,.06) 70%);opacity:.45;filter:blur(.3px);animation:float 12s ease-in-out infinite}
+  .bokeh i:nth-child(1){width:26px;height:26px;left:8%;top:44%;animation-delay:-1s}
+  .bokeh i:nth-child(2){width:12px;height:12px;left:17%;top:52%;animation-delay:-4s}
+  .bokeh i:nth-child(3){width:20px;height:20px;left:12%;top:31%;animation-delay:-7s}
+  .bokeh i:nth-child(4){width:9px;height:9px;left:23%;top:38%;animation-delay:-2s}
+  .bokeh i:nth-child(5){width:16px;height:16px;left:6%;top:62%;animation-delay:-9s}
+  .bokeh i:nth-child(6){width:11px;height:11px;left:26%;top:47%;animation-delay:-5s}
+  @keyframes float{0%,100%{transform:translateY(0);opacity:.25}50%{transform:translateY(-18px);opacity:.6}}
+
+  .hud{position:absolute;left:132px;right:132px;top:214px;z-index:20}
+
+  .salary{
+    position:relative;border-radius:30px;padding:20px 28px 18px;
+    background:linear-gradient(180deg,rgba(14,48,62,.95),rgba(8,36,48,.95));
+    border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden;
+  }
+  .salary:before{content:"";position:absolute;inset:0;background:radial-gradient(600px 120px at 82% 0%,rgba(230,207,149,.14),transparent 70%);pointer-events:none}
+  .salary-top{display:flex;justify-content:space-between;align-items:flex-start}
+  .shift{font-size:26px;letter-spacing:.5px;color:#dfe9e6;font-weight:600}
+  .shift b{color:var(--gold);font-weight:700;margin-right:8px}
+  .pct{margin-top:6px;font-size:22px;color:#8fd8ac;font-variant-numeric:tabular-nums}
+  .money{display:flex;align-items:baseline;gap:6px;justify-content:flex-end}
+  .money .big{font-size:72px;line-height:.95;font-weight:800;color:var(--cream);letter-spacing:-2px;font-variant-numeric:tabular-nums;text-shadow:0 4px 24px rgba(240,226,192,.18)}
+  .money .slash{font-size:34px;color:#7f9aa4;margin-left:2px}
+  .money .cap{font-size:22px;color:#9fb9c2;margin-left:8px;letter-spacing:1px}
+  .bar{margin-top:20px;height:14px;border-radius:20px;background:rgba(255,255,255,.10);overflow:hidden}
+  .bar>i{display:block;height:100%;width:0;border-radius:20px;background:linear-gradient(90deg,#b99b5c,#efdca6 70%,#fff3cf);box-shadow:0 0 24px rgba(240,226,192,.5);transition:width .55s cubic-bezier(.2,.8,.2,1)}
+
+  .target{
+    margin-top:14px;border-radius:26px;padding:18px 30px;display:flex;align-items:center;justify-content:space-between;
+    background:linear-gradient(120deg,#2b6d50 0%,#235440 60%,#1c4636 100%);
+    border:1px solid rgba(180,240,205,.18);box-shadow:0 16px 40px rgba(0,0,0,.3);position:relative;overflow:hidden;
+  }
+  .target:after{content:"";position:absolute;right:-60px;top:-80px;width:280px;height:280px;background:radial-gradient(circle,rgba(160,255,205,.14),transparent 65%)}
+  .target .t1{font-size:40px;font-weight:800;letter-spacing:1px;color:#f2fbef;line-height:1.2}
+  .target .t2{font-size:24px;color:#b9d9c5;margin-top:8px;letter-spacing:.5px}
+  .rest{text-align:right;position:relative;z-index:1}
+  .rest .num{font-size:52px;font-weight:800;color:#fff6dd;font-variant-numeric:tabular-nums;letter-spacing:1px;line-height:1}
+  .rest .lab{font-size:18px;color:#a9cbb7;margin-top:8px;letter-spacing:2px}
+
+  .chips{display:flex;gap:14px;margin-top:12px}
+  .chip{flex:1;border-radius:18px;padding:14px 20px;font-size:23px;letter-spacing:1px;display:flex;align-items:center;gap:10px;white-space:nowrap;background:rgba(9,36,48,.72);border:1px solid rgba(255,255,255,.12);color:#9fb9c2;transition:background .3s,color .3s,border-color .3s}
+  .chip.on{background:linear-gradient(120deg,rgba(47,125,92,.92),rgba(31,85,64,.92));border:1px solid rgba(150,235,185,.28);color:#e9f8ee}
+  .chip.off{background:rgba(9,36,48,.6);border:1px solid rgba(255,255,255,.12);color:#9fb9c2}
+  .dot{width:9px;height:9px;border-radius:50%;background:#8be3a9;box-shadow:0 0 12px #8be3a9}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);margin-top:12px;border-radius:22px;background:rgba(9,36,48,.66);border:1px solid var(--line);padding:14px 8px}
+  .stat{text-align:center;position:relative}
+  .stat+.stat:before{content:"";position:absolute;left:0;top:12%;height:76%;width:1px;background:rgba(255,255,255,.08)}
+  .stat b{display:block;font-size:40px;font-weight:800;color:#eef5ef;font-variant-numeric:tabular-nums;line-height:1.1}
+  .stat span{font-size:19px;color:#93aeb8;letter-spacing:1px}
+
+  .dialog{
+    margin-top:12px;border-radius:24px;padding:18px 28px;background:linear-gradient(180deg,rgba(8,32,43,.94),rgba(6,25,35,.94));
+    border:1px solid rgba(255,255,255,.13);box-shadow:var(--shadow);min-height:126px;position:relative;overflow:hidden;
+  }
+  .dialog .who{font-size:22px;color:#b9d3c9;letter-spacing:1px;display:flex;align-items:center;gap:10px}
+  .dialog .who:before{content:"";width:8px;height:8px;border-radius:50%;background:#ffd884;box-shadow:0 0 10px #ffd884}
+  .dialog .ask{margin-top:8px;padding-left:12px;border-left:3px solid rgba(143,216,172,.55);font-size:21px;line-height:1.45;color:#a9c3cb;max-height:64px;overflow:hidden}
+  .dialog .ask b{color:#8fd8ac;font-weight:600;margin-right:4px}
+  .dialog .ask.hidden{display:none}
+  .dialog .line{margin-top:10px;font-size:31px;line-height:1.45;color:#f6f8f2;letter-spacing:.5px;max-height:100px;overflow:hidden}
+  .dialog.flash{animation:flash .6s ease}
+  @keyframes flash{0%{transform:scale(.985);border-color:rgba(255,236,180,.7)}100%{transform:scale(1)}}
+
+  .clock,.mood{position:absolute;right:132px;z-index:25;display:flex;align-items:center;gap:12px;border-radius:999px;padding:10px 22px;background:rgba(6,26,36,.55);border:1px solid rgba(255,255,255,.10);color:#c9dbe1;font-size:24px;letter-spacing:1px;backdrop-filter:blur(6px)}
+  .clock{top:904px;font-variant-numeric:tabular-nums}
+  .clock b{font-size:30px;color:#eef4ef;font-weight:700}
+  .clock em{font-style:normal;font-size:19px;color:#8faab4}
+  .mood{top:1008px;background:rgba(10,40,50,.5);border-color:rgba(140,220,235,.18)}
+  .mood .pulse{width:9px;height:9px;border-radius:50%;background:#8fe3c0;box-shadow:0 0 12px #8fe3c0;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  .hero{position:absolute;left:0;right:0;top:640px;bottom:0;z-index:5}
+  .hero:before{content:"";position:absolute;left:50%;bottom:300px;width:900px;height:900px;margin-left:-450px;background:radial-gradient(circle,rgba(126,214,232,.13),transparent 62%);pointer-events:none}
+  .avatar-img{width:100%;height:auto;display:block;filter:drop-shadow(0 20px 40px rgba(0,0,0,.35))}
+  #live2dCanvas{display:block;width:100%;height:100%;filter:drop-shadow(0 26px 40px rgba(0,0,0,.38))}
+  .mascot.live2d{animation:none}
+  .pet-stage{position:absolute;left:50%;bottom:90px;height:800px;width:1000px;transform:translateX(-50%);display:none;pointer-events:none}
+  .pet-stage video{position:absolute;left:50%;bottom:0;height:800px;width:auto;transform:translateX(-50%);display:none;pointer-events:none;filter:drop-shadow(0 22px 30px rgba(0,0,0,.4))}
+  .pet-stage video.on{display:block}
+  .mascot.pet-mode #live2dCanvas,.mascot.pet-mode #mascotSvg,.mascot.pet-mode .actor-loading{display:none}
+  .mascot.pet-mode .pet-stage{display:block}
+  body.pet-mode .desk,body.pet-mode .monitor,body.pet-mode .mug,body.pet-mode .keyboard{display:none!important}
+  .decor{display:none}
+  body.pet-mode .decor{display:block;position:absolute;z-index:3;pointer-events:none}
+  .decor-badge{left:132px;top:300px;width:150px;height:150px;border-radius:50%;border:4px solid #d9c58f;box-shadow:0 20px 38px rgba(0,0,0,.45),inset 0 0 0 3px rgba(10,40,52,.6);overflow:hidden;transform:rotate(-3deg);background:#0b2533}
+  .decor-badge img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.95) brightness(.92)}
+  .decor-badge span{position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);font-size:11px;letter-spacing:3px;color:#0d2a36;background:#d9c58f;padding:2px 10px;border-radius:999px;white-space:nowrap}
+  .decor-pet{left:142px;top:838px;width:96px;height:72px;animation:bob 4.2s ease-in-out infinite;filter:drop-shadow(0 10px 14px rgba(0,0,0,.4))}
+  .decor-pet img{width:100%;height:100%;object-fit:cover;border-radius:50%;-webkit-mask-image:radial-gradient(ellipse at center,#000 52%,rgba(0,0,0,0) 76%);mask-image:radial-gradient(ellipse at center,#000 52%,rgba(0,0,0,0) 76%)}
+  .decor-shelf{right:132px;top:560px;width:214px;height:190px}
+  .shelf-board{position:absolute;left:0;right:0;bottom:18px;height:16px;border-radius:6px;background:linear-gradient(180deg,#b98f63,#7a5636);box-shadow:0 12px 22px rgba(0,0,0,.4)}
+  .decor-shelf img{position:absolute;bottom:28px;filter:drop-shadow(0 8px 12px rgba(0,0,0,.35))}
+  .prop-bowl{right:6px;width:120px}
+  .prop-rice{left:4px;width:92px;bottom:26px}
+  body.pet-mode .hero:after{content:"";position:absolute;left:50%;bottom:236px;width:560px;height:80px;margin-left:-280px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.55),rgba(0,0,0,0) 70%);z-index:4}
+  .actor-loading{position:absolute;left:50%;bottom:40%;transform:translateX(-50%);font-size:20px;color:#9fb9c2;letter-spacing:2px;background:rgba(6,26,36,.6);padding:8px 18px;border-radius:999px}
+  .mascot{position:absolute;left:50%;bottom:262px;width:748px;height:900px;margin-left:-374px;animation:bob 5s ease-in-out infinite;filter:drop-shadow(0 30px 50px rgba(0,0,0,.35))}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  #eyes{animation:blink 6.4s infinite;transform-box:fill-box;transform-origin:center}
+  @keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.08)}}
+  .mouth{transform-box:fill-box;transform-origin:center;transform:scaleY(var(--mouth,1));transition:transform .08s linear}
+
+  .props{position:absolute;left:420px;bottom:404px;z-index:13;width:220px;height:90px}
+  .papers{position:absolute;left:0;bottom:0;width:150px;height:64px}
+  .papers i{position:absolute;left:0;bottom:0;width:140px;height:54px;border-radius:4px;background:linear-gradient(180deg,#f4f0e4,#ddd6c4);box-shadow:0 4px 10px rgba(0,0,0,.3);transform-origin:bottom left}
+  .papers i:nth-child(1){transform:rotate(-4deg)}
+  .papers i:nth-child(2){transform:rotate(2deg) translate(8px,-4px);background:linear-gradient(180deg,#fffdf6,#e6dfcc)}
+  .papers i:nth-child(3){transform:rotate(-1deg) translate(3px,-8px);background:linear-gradient(180deg,#faf7ec,#d9d1bd)}
+  .pen{position:absolute;left:170px;bottom:6px;width:74px;height:8px;border-radius:6px;background:linear-gradient(90deg,#2d3742,#4a5666 30%,#1d242c);transform:rotate(-9deg);box-shadow:0 3px 8px rgba(0,0,0,.35)}
+  .desk{position:absolute;left:0;right:0;bottom:0;height:520px;z-index:12}
+  .desk .top{position:absolute;left:0;right:0;top:0;height:44px;background:linear-gradient(180deg,#b78f66,#8f6a48 45%,#63452f);box-shadow:0 -8px 30px rgba(0,0,0,.35), inset 0 2px 0 rgba(255,235,205,.35)}
+  .desk .top:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(255,255,255,.04),transparent 20%,transparent 80%,rgba(0,0,0,.12));}
+  .desk .body{position:absolute;left:0;right:0;top:44px;bottom:0;background:linear-gradient(180deg,#7d5b3e,#5c422c 55%,#412e1f);}
+  .desk .body:before{content:"";position:absolute;inset:0;background:
+    repeating-linear-gradient(92deg,rgba(255,232,200,.05) 0 3px,transparent 3px 11px),
+    repeating-linear-gradient(180deg,rgba(0,0,0,.10) 0 2px,transparent 2px 9px);opacity:.85}
+  .desk .body:after{content:"";position:absolute;inset:0;background:radial-gradient(900px 260px at 50% -10%,rgba(0,0,0,.35),transparent 70%),linear-gradient(180deg,transparent 60%,rgba(0,0,0,.25))}
+
+  .monitor{position:absolute;left:26px;bottom:548px;width:340px;height:268px;z-index:14;transform:rotate(-3deg);filter:drop-shadow(0 24px 40px rgba(0,0,0,.45))}
+  .monitor .screen{position:absolute;inset:0;border-radius:12px;border:12px solid #14171c;background:linear-gradient(160deg,#0e1d2a,#0a1620);box-shadow:inset 0 0 40px rgba(80,200,220,.08);padding:26px 24px;overflow:hidden}
+  .monitor .screen:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px);pointer-events:none}
+  .monitor .scr{position:absolute;inset:0}
+  .monitor .tab{display:flex;gap:10px;align-items:center;font:11px/1.4 ui-monospace,Menlo,monospace;color:#7f9aa8;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:8px;margin-bottom:10px}
+  .monitor .tab b{color:#cfe3e6;font-weight:600}
+  .monitor .code{font:11.5px/1.75 ui-monospace,Menlo,monospace;color:#a9c4cc}
+  .monitor .code i{display:inline-block;width:20px;color:#4d6a76;font-style:normal;text-align:right;margin-right:10px}
+  .monitor .kw{color:#c792ea}.monitor .fn{color:#82aaff}.monitor .str{color:#c3e88d}.monitor .num{color:#f78c6c}.monitor .cm{color:#546e7a}
+  .monitor .cursor{color:#e6cf95;animation:car 1s steps(1) infinite}
+  @keyframes car{0%,49%{opacity:1}50%,100%{opacity:0}}
+  .monitor .status{position:absolute;left:24px;right:24px;bottom:18px;font-size:11px;color:#7e9aa8;display:flex;align-items:center;gap:8px}
+  .monitor .dotg{width:6px;height:6px;border-radius:50%;background:#7fd6a4;box-shadow:0 0 8px #7fd6a4}
+  .monitor .scr-slack .r1{font-size:12px;color:#7e9aa8;letter-spacing:1px}
+  .monitor .scr-slack .r2{margin-top:6px;font-size:17px;color:#d9e6e2}
+  .monitor .scr-slack .txt{margin-top:18px;font-size:27px}
+  .monitor .scr-slack .time{margin-top:4px;font-size:46px}
+  .monitor .scr-slack .r3{margin-top:14px;font-size:12px;color:#89a5b0;line-height:1.7}
+
+  .keyboard{display:none}
+  .keyboard .krow{display:flex;justify-content:center;gap:6px;margin-bottom:6px}
+  .keyboard .key{width:42px;height:32px;border-radius:6px;background:linear-gradient(180deg,#2b3038,#171a20);border:1px solid #3a414b;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 #0c0e12;color:#6f7d8c;font:10px/32px ui-monospace,monospace;text-align:center;transition:transform .06s,background .06s,color .06s}
+  .keyboard .key.wide{width:64px}
+  .keyboard .key.space{width:230px}
+  .keyboard .key.active{background:linear-gradient(180deg,#6fe0c0,#2a9b7d);color:#06221a;transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 1px 0 #0c0e12,0 0 14px rgba(111,224,192,.55)}
+  .keyboard.idle{opacity:.55;filter:saturate(.5) drop-shadow(0 18px 22px rgba(0,0,0,.45))}
+  .monitor .r1{font-size:12px;color:#7e9aa8;letter-spacing:1px}
+  .monitor .r2{margin-top:6px;font-size:17px;color:#d9e6e2}
+  .monitor .txt{margin-top:18px;font-size:27px;color:#f3e7c4;letter-spacing:2px;font-weight:700}
+  .monitor .time{margin-top:4px;font-size:46px;color:#f3e7c4;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:2px}
+  .monitor .r3{margin-top:14px;font-size:12px;color:#89a5b0;line-height:1.7}
+  .monitor .stand{position:absolute;left:50%;bottom:-26px;width:26px;height:26px;margin-left:-13px;background:linear-gradient(180deg,#9aa4ab,#5c666d)}
+  .monitor .base{position:absolute;left:50%;bottom:-38px;width:150px;height:14px;margin-left:-75px;border-radius:10px;background:linear-gradient(180deg,#8d979e,#4c565c)}
+
+  .mug{position:absolute;right:36px;bottom:560px;width:92px;height:96px;z-index:14}
+  .mug .cup{position:absolute;left:0;bottom:0;width:74px;height:78px;border-radius:10px 10px 16px 16px;background:linear-gradient(160deg,#a9dfe8,#6fb9c6 60%,#4f97a4);box-shadow:inset 0 6px 12px rgba(255,255,255,.35)}
+  .mug .handle{position:absolute;right:0;bottom:20px;width:30px;height:38px;border:9px solid #7cc3cf;border-left:0;border-radius:0 20px 20px 0}
+  .mug .steam{position:absolute;left:22px;bottom:84px;width:6px;height:26px;border-radius:6px;background:linear-gradient(180deg,rgba(255,255,255,.5),transparent);filter:blur(2px);animation:steam 3s ease-in-out infinite}
+  @keyframes steam{0%,100%{opacity:.2;transform:translateY(0)}50%{opacity:.6;transform:translateY(-10px)}}
+
+  .feed{position:absolute;left:132px;top:1060px;width:352px;z-index:16;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+  .feed .msg{background:rgba(6,26,36,.62);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:8px 14px;font-size:20px;line-height:1.35;color:#dbe8e8;animation:in .35s ease;max-height:0;overflow:hidden}
+  .feed .msg b{color:#8fd8ac;font-weight:600;margin-right:6px}
+  .feed .msg.gift{border-color:rgba(240,210,140,.35);background:rgba(52,40,16,.55)}
+  .feed .msg.gift b{color:#f0d28c}
+  @keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .toasts{position:absolute;left:50%;top:150px;transform:translateX(-50%);z-index:30;display:flex;flex-direction:column;gap:10px;align-items:center}
+  .toast{padding:10px 22px;border-radius:999px;font-size:20px;letter-spacing:1px;background:rgba(10,40,52,.92);border:1px solid rgba(255,255,255,.16);color:#eaf3ee;animation:toast 3.4s ease forwards;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .toast.success{border-color:rgba(140,230,180,.45);color:#d9ffe6}
+  .toast.warn{border-color:rgba(255,180,120,.45);color:#ffe6c9}
+  @keyframes toast{0%{opacity:0;transform:translateY(-8px)}10%,80%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-6px)}}
+
+  .badge{position:absolute;left:132px;top:150px;z-index:30;display:flex;align-items:center;gap:10px;font-size:18px;color:#8ea9b3;letter-spacing:2px}
+  .badge .rec{width:8px;height:8px;border-radius:50%;background:#ff5a76;box-shadow:0 0 10px #ff5a76}
+  .conn{position:absolute;right:132px;top:152px;z-index:30;font-size:16px;color:#7f9aa4;letter-spacing:1px;display:flex;align-items:center;gap:8px}
+  .conn i{width:7px;height:7px;border-radius:50%;background:#6b7f88}
+  .conn.ok i{background:#7fe0a5;box-shadow:0 0 8px #7fe0a5}
+
+  .sound-gate{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);z-index:60;background:rgba(240,226,192,.95);color:#123040;border:0;border-radius:999px;padding:14px 26px;font-size:22px;cursor:pointer;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+  .hidden{display:none!important}
+  body.preview #stage{transform:scale(var(--scale,1))}
+</style>
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+    <div class="bokeh"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+    <div class="badge"><span class="rec"></span>直播中 · 海底办公室</div>
+    <div class="conn" id="conn"><i></i><span>弹幕未连接</span></div>
+
+    <div class="hud">
+      <section class="salary">
+        <div class="salary-top">
+          <div>
+            <div class="shift"><b id="shift">第 3 班</b><span id="shiftState">· 工资已达标</span></div>
+            <div class="pct" id="pct">100%</div>
+          </div>
+          <div class="money">
+            <span class="big" id="salary">6,000</span>
+            <span class="slash">/</span>
+            <span class="big" style="font-size:44px;color:#7f9aa4" id="target">6,000</span>
+            <span class="cap">游戏工资 · 元</span>
+          </div>
+        </div>
+        <div class="bar"><i id="bar"></i></div>
+      </section>
+
+      <section class="target" id="targetCard">
+        <div>
+          <div class="t1" id="targetTitle">工资够了，合理摸鱼。</div>
+          <div class="t2" id="targetSub">这会儿专心听你们说。</div>
+        </div>
+        <div class="rest" id="restBox">
+          <div class="num" id="rest">00:36</div>
+          <div class="lab">休息剩余</div>
+        </div>
+      </section>
+
+      <div class="chips">
+        <div class="chip on" id="chipA"><span class="dot"></span>合理摸鱼 · 专心陪聊</div>
+        <div class="chip off" id="chipB">· 工资达标 · 领导不巡查</div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><b id="focus">30</b><span>专注分钟</span></div>
+        <div class="stat"><b id="gifts">9</b><span>收到礼物</span></div>
+        <div class="stat"><b id="caught">5</b><span>被抓次数</span></div>
+        <div class="stat"><b id="delivered">54</b><span>成功交付</span></div>
+      </div>
+
+      <div class="dialog" id="dialog">
+        <div class="who" id="who">大鲵 · 正在合法休息</div>
+        <div class="ask hidden" id="askLine"></div>
+        <div class="line" id="line">豆龙？听着像谁家新出的点心，我这儿正歇着，你倒会找话题。</div>
+      </div>
+    </div>
+
+    <div class="clock"><b id="clock">00:15</b><em id="partOfDay">凌晨</em></div>
+    <div class="mood"><span class="pulse"></span>心情 · <span id="mood">放松一下</span></div>
+
+    <div class="hero">
+      <div class="decor decor-badge"><img src="/assets/pet/props/icon.png" alt=""><span>员工档案</span></div>
+      <div class="decor decor-pet"><img src="/assets/pet/props/whale.png" alt=""></div>
+      <div class="decor decor-shelf">
+        <img class="prop-bowl" src="/assets/pet/props/bowl-full.png" alt="">
+        <img class="prop-rice" src="/assets/pet/props/rice-ball.png" alt="">
+        <span class="shelf-board"></span>
+      </div>
+      <div class="mascot live2d">
+        <canvas id="live2dCanvas" aria-label="实时 Live2D 大肥鱼"></canvas>
+        <div id="petStage" class="pet-stage"></div>
+        <span id="actorLoading" class="actor-loading">模型加载中…</span>
+        <img id="avatarImg" class="avatar-img hidden" alt="主播形象" src="/assets/avatar.png">
+        <svg id="mascotSvg" class="hidden" viewBox="0 0 780 900" width="780" height="900" xmlns="http://www.w3.org/2000/svg" aria-label="大鲵立绘">
+          <defs>
+            <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#7b8df2"/><stop offset=".42" stop-color="#4d5ed4"/><stop offset="1" stop-color="#2a3490"/>
+            </linearGradient>
+            <linearGradient id="hairDark" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#4150b8"/><stop offset="1" stop-color="#1b2366"/>
+            </linearGradient>
+            <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#fff0e9"/><stop offset="1" stop-color="#f7d2c8"/>
+            </linearGradient>
+            <linearGradient id="iris" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#86b0ff"/><stop offset=".5" stop-color="#3a5ed6"/><stop offset="1" stop-color="#121c55"/>
+            </linearGradient>
+            <linearGradient id="dress" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dde2f3"/>
+            </linearGradient>
+            <linearGradient id="black" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#353753"/><stop offset="1" stop-color="#17192b"/>
+            </linearGradient>
+            <radialGradient id="blush" cx=".5" cy=".5" r=".5">
+              <stop offset="0" stop-color="#ff9aa6" stop-opacity=".8"/><stop offset="1" stop-color="#ff9aa6" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="fin" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#cfe4ff"/><stop offset="1" stop-color="#84a9f8"/>
+            </linearGradient>
+          </defs>
+
+          <!-- 双马尾 -->
+          <path d="M250 330 C186 470 172 606 196 742 C206 800 248 822 280 800 C248 690 252 540 292 404 Z" fill="url(#hairDark)"/>
+          <path d="M530 330 C594 470 608 606 584 742 C574 800 532 822 500 800 C532 690 528 540 488 404 Z" fill="url(#hairDark)"/>
+          <path d="M262 360 C210 480 200 612 220 724" stroke="#8b9efb" stroke-width="6" fill="none" opacity=".45"/>
+          <path d="M518 360 C570 480 580 612 560 724" stroke="#8b9efb" stroke-width="6" fill="none" opacity=".45"/>
+
+          <!-- 后发 -->
+          <path d="M244 330 C238 214 300 168 390 168 C480 168 542 214 536 330 L548 520 C470 560 310 560 232 520 Z" fill="url(#hair)"/>
+
+          <!-- 身体 -->
+          <path d="M356 452 h68 v62 h-68 z" fill="#eec0b5"/>
+          <path d="M300 528 C300 492 340 476 390 476 C440 476 480 492 480 528 L496 790 L284 790 Z" fill="url(#dress)"/>
+          <path d="M305 512 C332 498 360 520 390 520 C420 520 448 498 475 512 L484 704 L296 704 Z" fill="url(#black)"/>
+          <path d="M334 566 L446 566 L454 704 L326 704 Z" fill="#fbfbff" opacity=".97"/>
+          <path d="M334 566 L446 566" stroke="#c9d2e6" stroke-width="3" opacity=".9"/>
+          <path d="M334 566 L318 528 L340 520 L352 566 Z" fill="#f7f8ff" opacity=".85"/>
+          <path d="M446 566 L462 528 L440 520 L428 566 Z" fill="#f7f8ff" opacity=".85"/>
+          <path d="M330 506 L390 556 L450 506 L450 530 L390 580 L330 530 Z" fill="#f7f8ff"/>
+          <path d="M390 552 l-40 -17 v34 z" fill="#22243a"/>
+          <path d="M390 552 l40 -17 v34 z" fill="#22243a"/>
+          <circle cx="390" cy="552" r="11" fill="#4d5074"/>
+          <path d="M300 536 C294 610 296 690 304 762 L336 762 C330 690 330 606 336 546 Z" fill="url(#skin)"/>
+          <path d="M480 536 C486 610 484 690 476 762 L444 762 C450 690 450 606 444 546 Z" fill="url(#skin)"/>
+          <ellipse cx="292" cy="548" rx="44" ry="40" fill="#fff" stroke="#cfd6ea" stroke-width="3"/>
+          <ellipse cx="488" cy="548" rx="44" ry="40" fill="#fff" stroke="#cfd6ea" stroke-width="3"/>
+          <path d="M304 756 q34 18 68 0 l0 24 q-34 18 -68 0 z" fill="#f9d0c5"/>
+          <path d="M476 756 q-34 18 -68 0 l0 24 q34 18 68 0 z" fill="#f9d0c5"/>
+
+          <!-- 头 -->
+          <ellipse cx="390" cy="330" rx="152" ry="146" fill="url(#skin)"/>
+
+          <!-- 侧鳍 -->
+          <path d="M240 316 C204 300 180 320 190 348 C200 376 228 382 246 366 Z" fill="url(#fin)" stroke="#a9c4fa" stroke-width="2"/>
+          <path d="M540 316 C576 300 600 320 590 348 C580 376 552 382 534 366 Z" fill="url(#fin)" stroke="#a9c4fa" stroke-width="2"/>
+
+          <!-- 刘海 -->
+          <path d="M238 310 C232 206 300 162 390 162 C480 162 548 206 542 310 C516 296 470 288 390 288 C310 288 264 296 238 310 Z" fill="url(#hair)"/>
+          <path d="M392 170 C348 176 314 198 294 236" stroke="#9caefa" stroke-width="6" opacity=".5" fill="none"/>
+          <g stroke="#2b3490" stroke-width="4" opacity=".28" fill="none" stroke-linecap="round">
+            <path d="M302 186 C296 222 300 258 312 288"/>
+            <path d="M348 174 C342 214 344 254 350 288"/>
+            <path d="M390 170 C388 212 390 252 390 288"/>
+            <path d="M432 174 C438 214 436 254 430 288"/>
+            <path d="M478 186 C484 222 480 258 468 288"/>
+          </g>
+          <path d="M246 312 C232 390 238 458 258 512 C272 548 296 552 306 528 C286 466 286 388 300 326 Z" fill="url(#hair)"/>
+          <path d="M534 312 C548 390 542 458 522 512 C508 548 484 552 474 528 C494 466 494 388 480 326 Z" fill="url(#hair)"/>
+
+          <path d="M392 170 C400 128 424 108 444 116 C424 124 410 142 406 172 Z" fill="url(#hair)"/>
+
+          <!-- 女仆头饰 -->
+          <g>
+            <path d="M262 218 C296 184 340 170 390 170 C440 170 484 184 518 218" stroke="#fdfdff" stroke-width="28" fill="none" stroke-linecap="round"/>
+            <g fill="#ffffff" stroke="#e2e7f2" stroke-width="2">
+              <circle cx="278" cy="238" r="9"/><circle cx="312" cy="222" r="9"/><circle cx="350" cy="210" r="9"/>
+              <circle cx="390" cy="206" r="9"/><circle cx="430" cy="210" r="9"/><circle cx="468" cy="222" r="9"/><circle cx="502" cy="238" r="9"/>
+            </g>
+            <path d="M262 218 C296 184 340 170 390 170 C440 170 484 184 518 218" stroke="#dfe5f2" stroke-width="3" fill="none" opacity=".5"/>
+            <g fill="#ffffff" stroke="#d5dcee" stroke-width="2.5">
+              <circle cx="266" cy="206" r="15"/><circle cx="302" cy="186" r="16"/><circle cx="344" cy="174" r="16"/>
+              <circle cx="390" cy="170" r="16"/><circle cx="436" cy="174" r="16"/><circle cx="478" cy="186" r="16"/><circle cx="514" cy="206" r="15"/>
+            </g>
+            <path d="M516 232 l26 -18 v36 z" fill="#94a9ff"/>
+            <path d="M516 232 l-22 -16 v32 z" fill="#94a9ff"/>
+            <circle cx="516" cy="232" r="8" fill="#6d83e6"/>
+          </g>
+
+          <!-- 眼睛 -->
+          <g id="eyes">
+            <ellipse cx="322" cy="362" rx="43" ry="48" fill="#fff"/>
+            <ellipse cx="458" cy="362" rx="43" ry="48" fill="#fff"/>
+            <ellipse cx="324" cy="366" rx="35" ry="40" fill="url(#iris)"/>
+            <ellipse cx="456" cy="366" rx="35" ry="40" fill="url(#iris)"/>
+            <ellipse cx="324" cy="378" rx="25" ry="27" fill="#0c1640"/>
+            <ellipse cx="456" cy="378" rx="25" ry="27" fill="#0c1640"/>
+            <circle cx="311" cy="348" r="12" fill="#fff" opacity=".97"/>
+            <circle cx="443" cy="348" r="12" fill="#fff" opacity=".97"/>
+            <circle cx="339" cy="386" r="6" fill="#c4d8ff" opacity=".9"/>
+            <circle cx="471" cy="386" r="6" fill="#c4d8ff" opacity=".9"/>
+            <path d="M279 352 q20 -24 48 -18" stroke="#2a2d50" stroke-width="9" fill="none" stroke-linecap="round"/>
+            <path d="M501 352 q-20 -24 -48 -18" stroke="#2a2d50" stroke-width="9" fill="none" stroke-linecap="round"/>
+            <path d="M286 330 q18 -8 36 -3" stroke="#7b8bdf" stroke-width="5" fill="none" stroke-linecap="round" opacity=".55"/>
+            <path d="M494 330 q-18 -8 -36 -3" stroke="#7b8bdf" stroke-width="5" fill="none" stroke-linecap="round" opacity=".55"/>
+          </g>
+
+          <!-- 腮红 -->
+          <ellipse cx="276" cy="424" rx="36" ry="19" fill="url(#blush)"/>
+          <ellipse cx="504" cy="424" rx="36" ry="19" fill="url(#blush)"/>
+
+          <!-- 嘴 -->
+          <g class="mouth" id="mouth">
+            <path d="M376 448 q14 12 28 0" stroke="#c2656f" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <path d="M384 456 q6 4 12 0" stroke="#e8a3aa" stroke-width="4" fill="none" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </div>
+
+      <div class="monitor">
+        <div class="screen">
+          <div class="scr scr-code" id="scrCode">
+            <div class="tab"><b>server.py</b><span>salary_engine</span></div>
+            <div class="code">
+              <div><i>41</i><span class="kw">class</span> <span class="fn">SalaryEngine</span>:</div>
+              <div><i>42</i>&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">tick</span>(self):</div>
+              <div><i>43</i>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> phase == <span class="str">"work"</span>:</div>
+              <div><i>44</i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.salary += <span class="num">6</span></div>
+              <div><i>45</i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 摸鱼倒计时</span></div>
+              <div><i>46</i>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> self.<span class="fn">deliver</span>()</div>
+              <div><i>47</i><span class="cursor">▍</span></div>
+            </div>
+            <div class="status"><span class="dotg"></span>正在编译 · 第 <b id="codeShift">3</b> 班</div>
+          </div>
+          <div class="scr scr-slack hidden" id="scrSlack">
+            <div class="r1" id="monShift">第 3 班 · 6,000 工资已达标</div>
+            <div class="r2" id="monLabel">合法摸鱼时间</div>
+            <div class="time" id="monTime">00:36</div>
+            <div class="r3">手头有点紧，先聊会儿。<br>领导巡查：<span id="monPatrol">本轮不巡查</span></div>
+          </div>
+        </div>
+        <div class="stand"></div><div class="base"></div>
+      </div>
+
+      <div class="mug"><div class="steam"></div><div class="handle"></div><div class="cup"></div></div>
+
+      
+
+      <div class="desk"><div class="top"></div><div class="body"></div></div>
+    </div>
+
+    <div class="feed hidden" id="feed"></div>
+    <div class="toasts" id="toasts"></div>
+    <button id="soundGate" class="sound-gate">🔊 点一下开启声音</button>
+    <audio id="audio" preload="auto"></audio>
+    <audio id="bgm" preload="auto" loop></audio>
+  </div>
+</div>
+
+<script>
+  /* Live2D 是可选舞台：只有显式带 ?char=live2d 才下载 SDK 和模型。
+     默认桌宠动图模式不再加载这些脚本，也不会触发建模失败或立绘回退。 */
+  if (new URLSearchParams(location.search).get('char') === 'live2d') {
+    for (const src of [
+      '/assets/live2d/vendor/pixi.min.js',
+      '/assets/live2d/vendor/live2dcubismcore.min.js',
+      '/assets/live2d/vendor/cubism4.min.js',
+      '/assets/live2d/actor.js'
+    ]) document.write('<script src="' + src + '"><\/script>');
+  }
+</script>
+<script type="module">
+  const $ = (s) => document.querySelector(s);
+  const params = new URLSearchParams(location.search);
+  const isDemo = params.get('demo') === '1';
+  const isMutedPreview = params.get('mute') === '1';
+  const stage = $('#stage');
+
+  function fit() {
+    const s = Math.min(innerWidth / 1080, innerHeight / 1920);
+    stage.style.transform = `scale(${s})`;
+  }
+  addEventListener('resize', fit);
+  fit();
+
+  const el = {
+    shift: $('#shift'), shiftState: $('#shiftState'), pct: $('#pct'), salary: $('#salary'), target: $('#target'),
+    bar: $('#bar'), targetTitle: $('#targetTitle'), targetSub: $('#targetSub'), rest: $('#rest'), restBox: $('#restBox'),
+    chipA: $('#chipA'), chipB: $('#chipB'), focus: $('#focus'), gifts: $('#gifts'), caught: $('#caught'), delivered: $('#delivered'),
+    who: $('#who'), ask: $('#askLine'), line: $('#line'), dialog: $('#dialog'), clock: $('#clock'), partOfDay: $('#partOfDay'), mood: $('#mood'),
+    monShift: $('#monShift'), monTime: $('#monTime'), monPatrol: $('#monPatrol'), monLabel: $('#monLabel'), conn: $('#conn'),
+    feed: $('#feed'), toasts: $('#toasts'), audio: $('#audio'), bgm: $('#bgm'), mouth: $('#mouth')
+  };
+
+  // 桌面键盘
+  const kb = document.getElementById('keyboard');
+  if (kb) {
+    const rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+    rows.forEach((row, i) => {
+      const el = document.createElement('div');
+      el.className = 'krow';
+      for (const ch of row) {
+        const k = document.createElement('div');
+        k.className = 'key';
+        k.textContent = ch;
+        el.append(k);
+      }
+      kb.append(el);
+    });
+    const last = document.createElement('div');
+    last.className = 'krow';
+    const space = document.createElement('div');
+    space.className = 'key space';
+    last.append(space);
+    kb.append(last);
+  }
+
+  let typingTimer = null;
+  function clickSound() {
+    if (!actx) return;
+    try {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'square';
+      o.frequency.value = 1100 + Math.random() * 700;
+      g.gain.value = 0.015;
+      o.connect(g); g.connect(actx.destination);
+      o.start();
+      g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.03);
+      o.stop(actx.currentTime + 0.045);
+    } catch { /* ignore */ }
+  }
+  function typingLoop() {
+    if (!kb || petMode) return;
+    const working = state.phase === '上班';
+    kb.classList.toggle('idle', !working);
+    if (working) {
+      const keys = kb.querySelectorAll('.key');
+      const k = keys[Math.floor(Math.random() * keys.length)];
+      k.classList.add('active');
+      setTimeout(() => k.classList.remove('active'), 80 + Math.random() * 70);
+      if (Math.random() < 0.55) clickSound();
+    }
+    typingTimer = setTimeout(typingLoop, working ? 110 + Math.random() * 150 : 1200);
+  }
+
+  let aliveTimerA = null, aliveTimerB = null;
+  function ensureAlive() {
+    const a = window.whaleActor;
+    if (!a || !a.model) return;
+    if (!aliveTimerA) {
+      aliveTimerA = setInterval(() => { try { a.model.motion('Idle', 0, 3); } catch { /* ignore */ } }, 4200);
+    }
+    if (!aliveTimerB) {
+      aliveTimerB = setInterval(() => {
+        try { a.model.motion('Tap', Math.random() < 0.6 ? 0 : 5, 3); } catch { /* ignore */ }
+      }, 9000);
+    }
+    if (a.app?.ticker && !a.app.ticker.started) a.app.ticker.start();
+  }
+
+  let bgmState = { playing: false, index: 0, volume: 0.25, tracks: [] };
+
+  const state = {
+    salary: 0, target: 6000, shift: 1, phase: '上班', restLeft: 0, focusMinutes: 0,
+    gifts: 0, caught: 0, delivered: 0, progress: 0, line: '', speaker: '大鲵',
+    speakerStatus: '正在合法休息', mood: '放松一下', clock: '', partOfDay: ''
+  };
+
+  const modelState = { emotion: 'neutral', effect: 'none', until: 0 };
+  const actorReady = () => Boolean(window.whaleActor && window.whaleActor.model);
+  function zoomActor() {
+    const a = window.whaleActor;
+    if (!a || !a.model || a.__zoomed) return;
+    if (typeof a.layout !== 'function') return;
+    const base = a.layout.bind(a);
+    a.layout = () => {
+      base();
+      const m = a.model;
+      m.y += -160;
+    };
+    a.layout();
+    a.__zoomed = true;
+  }
+  function applyPet() {
+    if (!petMode || !petStage) return;
+    document.body.classList.add('pet-mode');
+    document.querySelector('.mascot')?.classList.add('pet-mode');
+    if (state.phase === '摸鱼') {
+      if (!PET_CLIPS.sit.includes(petBase)) petBase = PET_CLIPS.slack;
+      ensureSitRotation();
+    } else {
+      if (sitTimer) { clearInterval(sitTimer); sitTimer = null; }
+      petBase = PET_CLIPS.work;
+    }
+    if (!petStage.dataset.temp) petShow(petBase);
+  }
+
+  function applyActor() {
+    if (!actorReady()) return;
+    try {
+      window.whaleActor.update({
+        activity: state.phase === '摸鱼' ? 'phone' : 'none',
+        prop: 'none',
+        outfit: {},
+        reaction: { emotion: modelState.emotion, effect: modelState.effect, gesture: 'none', effect_until: modelState.until },
+        time_theme: { effective: 'night' },
+        renderer: { max_fps: 30, pixel_ratio: 1.5, min_action_seconds: 2.5 }
+      });
+    } catch { /* 模型帧未就绪时忽略 */ }
+  }
+  let reactTimer = null;
+  function react(emotion, effect, ms) {
+    clearTimeout(reactTimer);
+    modelState.emotion = emotion;
+    modelState.effect = effect || 'none';
+    modelState.until = Date.now() + ms;
+    applyActor();
+    reactTimer = setTimeout(() => {
+      modelState.emotion = 'neutral';
+      modelState.effect = 'none';
+      modelState.until = 0;
+      applyActor();
+    }, ms);
+  }
+
+  let shownSalary = 0;
+  function tweenSalary(to, instant = false) {
+    const from = shownSalary;
+    const start = performance.now();
+    const dur = instant ? 0 : 650;
+    function step(t) {
+      const k = dur ? Math.min(1, (t - start) / dur) : 1;
+      const eased = 1 - Math.pow(1 - k, 3);
+      shownSalary = from + (to - from) * eased;
+      el.salary.textContent = Math.round(shownSalary).toLocaleString('zh-CN');
+      if (k < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  const fmt = (s) => `${String(Math.floor(Math.max(0, s) / 60)).padStart(2, '0')}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
+
+  function render(patch, instant = false) {
+    Object.assign(state, patch);
+    const s = state;
+    const achieved = s.salary >= s.target;
+    el.shift.textContent = `第 ${s.shift} 班`;
+    el.shiftState.textContent = achieved ? '· 工资已达标' : '· 正在攒工资';
+    el.pct.textContent = `${Math.round((s.progress || 0) * 100)}%`;
+    tweenSalary(s.salary, instant);
+    el.target.textContent = Number(s.target).toLocaleString('zh-CN');
+    el.bar.style.width = `${Math.round((s.progress || 0) * 100)}%`;
+    el.pct.style.color = achieved ? '#8fd8ac' : '#e6cf95';
+
+    const slack = s.phase === '摸鱼';
+    if (slack && s.restLeft > 0) {
+      el.targetTitle.textContent = '工资够了，合理摸鱼。';
+      el.targetSub.textContent = '这会儿专心听你们说。';
+      el.rest.textContent = fmt(s.restLeft);
+      el.restBox.classList.remove('hidden');
+    } else if (s.phase === '巡查') {
+      el.targetTitle.textContent = '领导来了，先装一下忙。';
+      el.targetSub.textContent = '鼠标点得比谁都快。';
+      el.restBox.classList.add('hidden');
+    } else {
+      el.targetTitle.textContent = `还差 ${Math.max(0, Math.round(s.target - s.salary)).toLocaleString('zh-CN')} 元达标`;
+      el.targetSub.textContent = '多聊两句，工资条就厚了。';
+      el.restBox.classList.add('hidden');
+    }
+
+    el.chipA.classList.toggle('on', slack);
+    el.chipA.classList.toggle('off', !slack);
+    el.chipB.classList.remove('on');
+    el.chipB.classList.add('off');
+    el.chipB.innerHTML = slack ? '· 工资达标 · 领导不巡查' : '· 认真上班 · 等待巡查';
+
+    el.focus.textContent = Math.round(s.focusMinutes);
+    el.gifts.textContent = s.gifts;
+    el.caught.textContent = s.caught;
+    el.delivered.textContent = s.delivered;
+
+    if (s.line) el.line.textContent = s.line;
+    el.who.textContent = `${s.speaker} · ${s.speakerStatus}`;
+    el.mood.textContent = s.mood;
+    if (s.clock) el.clock.textContent = s.clock;
+    if (s.partOfDay) el.partOfDay.textContent = s.partOfDay;
+
+    el.monShift.textContent = `第 ${s.shift} 班 · ${Number(s.target).toLocaleString('zh-CN')} 工资${achieved ? '已达标' : '冲刺中'}`;
+    document.getElementById('scrCode')?.classList.toggle('hidden', slack);
+    document.getElementById('scrSlack')?.classList.toggle('hidden', !slack);
+    const cs = document.getElementById('codeShift');
+    if (cs) cs.textContent = s.shift;
+    el.monLabel.textContent = slack ? '合法摸鱼时间' : '距离摸鱼';
+    el.monTime.textContent = slack ? fmt(s.restLeft) : `${Math.round((s.progress || 0) * 100)}%`;
+    el.monPatrol.textContent = slack ? '本轮不巡查' : '随时可能来';
+    applyActor();
+    applyPet();
+  }
+
+  function addFeed(html, cls = '') {
+    const div = document.createElement('div');
+    div.className = `msg ${cls}`;
+    div.innerHTML = html;
+    el.feed.append(div);
+    requestAnimationFrame(() => { div.style.maxHeight = '120px'; });
+    while (el.feed.children.length > 5) el.feed.firstElementChild.remove();
+    setTimeout(() => {
+      div.style.transition = 'opacity .4s';
+      div.style.opacity = '0';
+      setTimeout(() => div.remove(), 420);
+    }, 12000);
+  }
+
+  function toast(text, tone = 'info') {
+    const d = document.createElement('div');
+    d.className = `toast ${tone}`;
+    d.textContent = text;
+    el.toasts.append(d);
+    setTimeout(() => d.remove(), 3600);
+  }
+
+  /* 音频队列 */
+  const queue = [];
+  let playing = false;
+  function enqueue(url) {
+    if (!url) return;
+    queue.push(url);
+    if (!playing) playNext();
+  }
+  async function playNext() {
+    const url = queue.shift();
+    if (!url) { playing = false; bgmDuck(false); mouthRest(); return; }
+    playing = true;
+    bgmDuck(true);
+    el.audio.muted = isMutedPreview;
+    ensureAnalyser();
+    el.audio.src = url;
+    try {
+      await el.audio.play();
+    } catch {
+      playing = false;
+      document.getElementById('soundGate')?.classList.remove('hidden');
+      toast('浏览器拦截了声音，点下方按钮开启', 'warn');
+      return;
+    }
+    document.getElementById('soundGate')?.classList.add('hidden');
+    if (bgmState?.playing) bgmEl?.play().catch(() => {});
+  }
+  function stopInteractionAudio() {
+    queue.length = 0;
+    playing = false;
+    el.audio.pause();
+    el.audio.removeAttribute('src');
+    el.audio.load();
+    bgmState.playing = false;
+    bgmEl.pause();
+    mouthRest();
+  }
+  addEventListener('alive-interaction', e => { if (!e.detail.enabled) stopInteractionAudio(); });
+  el.audio.addEventListener('ended', () => { mouthRest(); playNext(); });
+  el.audio.addEventListener('pause', () => { if (el.audio.ended) bgmDuck(false); });
+  el.audio.addEventListener('error', () => { mouthRest(); playing = false; });
+  addEventListener('pointerdown', () => { if (el.audio.paused && queue.length) playNext(); });
+
+  let analyser = null, actx = null, wave = null, mouthLevel = 0;
+  let bgmBase = 0.25;
+  const bgmEl = document.getElementById('bgm');
+  function bgmDuck(on) {
+    if (!bgmEl) return;
+    bgmEl.volume = Math.max(0, Math.min(1, bgmBase * (on ? 0.22 : 1)));
+  }
+  function applyBgm(s) {
+    if (!bgmEl || !s) return;
+    const tracks = s.tracks || [];
+    if (!tracks.length) return;
+    const idx = Math.max(0, Math.min(tracks.length - 1, Number(s.index) || 0));
+    const file = s.track || tracks[idx]?.file;
+    if (!file) return;
+    bgmBase = Number.isFinite(Number(s.volume)) ? Number(s.volume) : bgmBase;
+    const url = '/assets/bgm/' + encodeURIComponent(file);
+    if (bgmEl.dataset.file !== file) {
+      bgmEl.dataset.file = file;
+      bgmEl.src = url;
+    }
+    bgmEl.volume = bgmBase;
+    bgmEl.muted = isMutedPreview;
+    if (s.playing && !isMutedPreview) bgmEl.play().catch(() => {});
+    else bgmEl.pause();
+  }
+  function unlockAudio() {
+    ensureAnalyser();
+    try {
+      if (actx && actx.state === 'suspended') actx.resume();
+      if (actx) {
+        const b = actx.createBuffer(1, 1, 22050);
+        const src = actx.createBufferSource();
+        src.buffer = b; src.connect(actx.destination); src.start(0);
+      }
+    } catch { /* ignore */ }
+    document.getElementById('soundGate')?.classList.add('hidden');
+    if (bgmState?.playing) bgmEl?.play().catch(() => {});
+  }
+  document.getElementById('soundGate')?.addEventListener('click', unlockAudio);
+  addEventListener('pointerdown', () => { if (!analyser) unlockAudio(); }, { once: true });
+  function ensureAnalyser() {
+    if (analyser || !el.audio) return;
+    try {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = actx.createMediaElementSource(el.audio);
+      analyser = actx.createAnalyser();
+      analyser.fftSize = 256;
+      wave = new Uint8Array(analyser.fftSize);
+      src.connect(analyser);
+      analyser.connect(actx.destination);
+    } catch {
+      analyser = null;
+    }
+  }
+  function mouthRest() { if (el.mouth) el.mouth.style.setProperty('--mouth', '1'); }
+  (function mouthLoop() {
+    let v = 0;
+    if (analyser && !el.audio.paused) {
+      analyser.getByteTimeDomainData(wave);
+      let sum = 0;
+      for (const x of wave) { const d = (x - 128) / 128; sum += d * d; }
+      v = Math.min(1, Math.sqrt(sum / wave.length) * 6);
+    } else if (!el.audio.paused) {
+      v = 0.18 + 0.22 * Math.abs(Math.sin(performance.now() / 110));
+    }
+    mouthLevel += (v - mouthLevel) * 0.45;
+    if (actorReady()) {
+      try {
+        const a = window.whaleActor;
+        const cm = a.model.internalModel.coreModel;
+        const now = performance.now();
+        cm.setParameterValueById('ParamMouthOpenY', mouthLevel * 0.95);
+        cm.setParameterValueById('ParamBodyAngleZ', Math.sin(now / 1700) * 2.2);
+        cm.setParameterValueById('ParamAngleX', Math.sin(now / 2400) * 3);
+        cm.setParameterValueById('ParamAngleY', Math.cos(now / 3100) * 1.4);
+        if (state.phase === '上班') {
+          cm.setParameterValueById('ParamBodyAngleY', Math.sin(now / 70) * 0.7);
+          for (const p of ['phone', 'phone4', 'phone6']) cm.setParameterValueById(p, 0);
+        }
+        if (a.app?.ticker && !a.app.ticker.started) a.app.ticker.start();
+      } catch { /* ignore */ }
+    }
+    if (el.mouth) el.mouth.style.setProperty('--mouth', (0.55 + mouthLevel * 1.4).toFixed(2));
+    requestAnimationFrame(mouthLoop);
+  })();
+
+  /* 弹幕 */
+  function bindEvents() {
+    const es = new EventSource('/api/events');
+    es.addEventListener('interaction-stop', stopInteractionAudio);
+    es.addEventListener('interaction', e => { try { window.aliveApplyInteraction?.(JSON.parse(e.data)); } catch {} });
+    es.addEventListener('state', (e) => {
+      const { state: s, kind } = JSON.parse(e.data);
+      render(s, kind === 'init');
+      if (['patrol', 'patrol-end', 'deliver', 'reset'].includes(kind)) {
+        el.ask?.classList.add('hidden');
+        clearTimeout(askTimer);
+      }
+    });
+    es.addEventListener('status', (e) => {
+      const s = JSON.parse(e.data);
+      const ok = /已连接/.test(s.status);
+      el.conn.classList.toggle('ok', ok);
+      el.conn.querySelector('span').textContent = s.status;
+    });
+    es.addEventListener('danmaku', (e) => {
+      const m = JSON.parse(e.data);
+      addFeed(`<b>${escapeHtml(m.name)}</b>${escapeHtml(m.text)}`);
+    });
+    es.addEventListener('gift', (e) => {
+      const g = JSON.parse(e.data);
+      addFeed(`<b>${escapeHtml(g.name)}</b>送出 ${escapeHtml(g.giftName)} ×${g.count}`, 'gift');
+      react('happy', 'hearts', 3000);
+      playTap(0);
+      petPlay(PET_CLIPS.gift, true);
+      toast(`${g.name} 送出 ${g.giftName} +${g.gain.toLocaleString('zh-CN')} 元`, 'success');
+    });
+    es.addEventListener('follow', (e) => {
+      const f = JSON.parse(e.data);
+      addFeed(`<b>${escapeHtml(f.name)}</b>关注了直播间`, 'gift');
+    });
+    es.addEventListener('reply', (e) => {
+      const r = JSON.parse(e.data);
+      lastReplyId = r.id;
+      el.line.textContent = r.text;
+      const c0 = r.comments && r.comments[0];
+      if (c0 && c0.name !== '导播') showAsk(c0.name, c0.text);
+      el.dialog.classList.remove('flash');
+      void el.dialog.offsetWidth;
+      el.dialog.classList.add('flash');
+      enqueue(r.audio);
+      playTap(5);
+      const alts = PET_CLIPS.replyAlt;
+      petPlay(Math.random() < 0.45 ? PET_CLIPS.reply : alts[Math.floor(Math.random() * alts.length)], true);
+      if (modelState.emotion === 'neutral') react('happy', 'none', 1200);
+    });
+    es.addEventListener('reply-audio', (e) => {
+      const m = JSON.parse(e.data);
+      if (m.id === lastReplyId) enqueue(m.audio);
+    });
+    es.addEventListener('bgm', (e) => {
+      bgmState = JSON.parse(e.data);
+      applyBgm(bgmState);
+    });
+    es.addEventListener('action', (e) => {
+      const m = JSON.parse(e.data);
+      playTap(m.index);
+      petPlay(PET_CLIPS.gift, true);
+    });
+    es.addEventListener('toast', (e) => {
+      const t = JSON.parse(e.data);
+      toast(t.text, t.tone);
+    });
+    es.addEventListener('event', (e) => {
+      const ev = JSON.parse(e.data);
+      if (ev.type === 'target') { toast(ev.text, 'success'); react('starry', 'flowers', 4000); }
+      if (ev.type === 'patrol' && ev.caught) { react('stunned', 'none', 2600); playTap(3); petPlay(PET_CLIPS.scare, true); }
+    });
+    es.onerror = () => {
+      el.conn.classList.remove('ok');
+      el.conn.querySelector('span').textContent = '与本地服务断开，重连中…';
+    };
+  }
+
+  const PET_CLIPS = {
+    work: '写代码',
+    slack: '待机呼吸休闲',
+    sleep: '原地小憩沉眠',
+    reply: '点击回应-元气挥手',
+    replyAlt: ['点击回应-傲娇生气', '点击回应-害羞惊讶', '点击回应-挠痒咯咯笑', '点击回应-开心跃动'],
+    sit: ['摇扇纳凉', '骑木马', '荡秋千'],
+    gift: '点击回应-开心跃动',
+    scare: '被吓一跳',
+    cheer: '收红包'
+  };
+  const petMode = params.get('char') !== 'live2d';
+  const petStage = document.getElementById('petStage');
+  const petPool = new Map();
+  let petBase = PET_CLIPS.work;
+  let petTimer = null;
+
+  function petEl(name) {
+    if (!petStage) return null;
+    if (petPool.has(name)) return petPool.get(name);
+    const v = document.createElement('video');
+    v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'none';
+    v.src = '/assets/pet/' + encodeURIComponent(name) + '.webm';
+    v.className = 'pet-video';
+    petStage.append(v);
+    petPool.set(name, v);
+    v.load();
+    return v;
+  }
+
+  function petShow(name) {
+    if (!petStage) return;
+    for (const [n, v] of petPool) v.classList.toggle('on', n === name);
+    const v = petEl(name);
+    if (!v) return;
+    v.classList.add('on');
+    if (v.paused) v.play().catch(() => {});
+  }
+
+  function petPlay(name, once = false) {
+    if (!name) return;
+    clearTimeout(petTimer);
+    if (once) {
+      petStage.dataset.temp = '1';
+      petShow(name);
+      petTimer = setTimeout(() => {
+        delete petStage.dataset.temp;
+        petShow(petBase);
+      }, 5200);
+    } else {
+      delete petStage.dataset.temp;
+      petShow(name);
+    }
+  }
+
+  function petBaseFor(phase) {
+    if (phase === '摸鱼') return PET_CLIPS.slack;
+    return PET_CLIPS.work;
+  }
+
+  let sitTimer = null;
+  function ensureSitRotation() {
+    if (sitTimer) return;
+    const first = PET_CLIPS.sit[Math.floor(Math.random() * PET_CLIPS.sit.length)];
+    petBase = first;
+    petShow(first);
+    sitTimer = setInterval(() => {
+      if (state.phase !== '摸鱼' || petStage.dataset.temp) return;
+      const list = PET_CLIPS.sit;
+      const next = list[Math.floor(Math.random() * list.length)];
+      petBase = next;
+      petShow(next);
+    }, 24000);
+  }
+
+  function preloadPets() {
+    if (!petStage) return;
+    // 只预载上班/摸鱼/回复三条，其余按需加载，降低开窗时的解码和内存占用
+    [PET_CLIPS.work, PET_CLIPS.slack, PET_CLIPS.reply].forEach((n) => {
+      const v = petEl(n);
+      if (v) { v.preload = 'auto'; v.load(); }
+    });
+  }
+
+  function playTap(index) {
+    if (!actorReady()) return;
+    try { window.whaleActor.model.motion('Tap', index, 3); } catch { /* ignore */ }
+  }
+  let askTimer = null;
+  let lastReplyId = 0;
+  function showAsk(name, text) {
+    if (!el.ask) return;
+    el.ask.innerHTML = `<b>${escapeHtml(name)}</b>：${escapeHtml(text)}`;
+    el.ask.classList.remove('hidden');
+    clearTimeout(askTimer);
+    askTimer = setTimeout(() => el.ask.classList.add('hidden'), 30000);
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  async function boot() {
+    if (isMutedPreview) { el.audio.muted = true; bgmEl.muted = true; document.getElementById('soundGate')?.classList.add('hidden'); }
+    if (petMode) { document.querySelector('.mascot')?.classList.add('pet-mode'); preloadPets(); }
+    if (params.get('feed') === '1') el.feed.classList.remove('hidden');
+    const waitModel = setInterval(() => {
+      if (actorReady()) {
+        clearInterval(waitModel);
+        const loading = document.getElementById('actorLoading');
+        if (loading) loading.hidden = true;
+        zoomActor();
+        ensureAlive();
+        applyActor();
+      }
+    }, 400);
+    setTimeout(() => {
+      if (!actorReady()) {
+        const c = document.getElementById('live2dCanvas');
+        if (c) c.classList.add('hidden');
+        document.getElementById('mascotSvg')?.classList.remove('hidden');
+        const loading = document.getElementById('actorLoading');
+        if (loading) loading.hidden = true;
+      }
+    }, 12000);
+    try {
+      const probe = await fetch('/assets/avatar.png', { method: 'HEAD' });
+      if (probe.ok && !actorReady()) {
+        $('#avatarImg').classList.remove('hidden');
+      }
+    } catch { /* 使用内置立绘 */ }
+    if (isDemo) {
+      render({
+        shift: 3, salary: 6000, target: 6000, progress: 1, phase: '摸鱼', restLeft: 36,
+        focusMinutes: 30, gifts: 9, caught: 5, delivered: 54, line: '豆龙？听着像谁家新出的点心，我这儿正歇着，你倒会找话题。',
+        speaker: '大鲵', speakerStatus: '正在合法休息', mood: '放松一下', clock: '00:15', partOfDay: '凌晨'
+      }, true);
+      el.conn.classList.add('ok');
+      el.conn.querySelector('span').textContent = '演示模式';
+      addFeed('<b>豆龙</b>主播在摸鱼吗？', '');
+      addFeed('<b>小鱼干</b>工资够了就该歇着', '');
+      return;
+    }
+    typingLoop();
+    try {
+      const r = await fetch('/api/state');
+      const data = await r.json();
+      if (data.config?.ui?.showDanmakuFeed) el.feed.classList.remove('hidden');
+      if (data.lastReply && (!data.lastReply.reply || data.lastReply.reply === data.state.line)) showAsk(data.lastReply.name, data.lastReply.text);
+      bgmState = data.bgm || bgmState;
+      applyBgm(bgmState);
+      render(data.state, true);
+      const ok = /已连接/.test(data.status.status);
+      el.conn.classList.toggle('ok', ok);
+      el.conn.querySelector('span').textContent = data.status.status;
+      bindEvents();
+    } catch {
+      el.conn.querySelector('span').textContent = '本地服务未启动';
+    }
+  }
+  boot();
+</script>
+</body>
+</html>

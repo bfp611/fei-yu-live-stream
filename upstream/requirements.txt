@@ -1,0 +1,4 @@
+aiohttp>=3.10,<4
+edge-tts>=7,<8
+PyYAML>=6,<7
+# Bilibili reception: install blivedm separately from its upstream source.

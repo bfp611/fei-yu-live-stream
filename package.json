@@ -1,0 +1,26 @@
+{
+  "name": "alive-douyin-studio",
+  "version": "0.2.0",
+  "description": "抖音直播互动助手：工资条摸鱼玩法 + Live2D/立绘 + 弹幕语音回复",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.mjs",
+    "check:engine": "node tools/scene2-engine-check.mjs",
+    "check:session": "node tools/interaction-session-check.mjs",
+    "check:companion": "node tools/companion-control-check.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "dependencies": {
+    "@andresaya/edge-tts": "^1.9.1",
+    "msedge-tts": "^2.1.1",
+    "protobufjs": "^7.6.6",
+    "ws": "^8.22.2"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "file": "licenses/dsh-pet-MIT.txt",
+    "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/main/LICENSE",
+    "sha256": "22757dc9c895b2729a2fc684d227cadfb54d5af3dd300029926839e8c4e269ce"
+  },
+  {
+    "file": "licenses/dsh-pet-upstream-README.md",
+    "url": "https://raw.githubusercontent.com/PC2005-cloud/dsh-pet/main/README.md",
+    "sha256": "c87329af1897e5b7360f6a5950bfc39e5fd2cd4d421a3e344516d4665f52f484"
+  },
+  {
+    "file": "licenses/CC-BY-NC-SA-4.0.txt",
+    "url": "https://raw.githubusercontent.com/idleberg/Creative-Commons-4.0-Markdown/main/4.0/by-nc-sa.markdown",
+    "sha256": "7a31126d7adf334ccdcbefd35c2fe98254db746113c6b80e9943b1800d36fc39"
+  },
+  {
+    "file": "licenses/CC-BY-4.0.txt",
+    "url": "https://raw.githubusercontent.com/idleberg/Creative-Commons-4.0-Markdown/main/4.0/by.markdown",
+    "sha256": "dca018b777d7bbaad6a295cd35b9653e8ffe014ac8a737292157e1f33b769753"
+  },
+  {
+    "file": "licenses/Live2D-proprietary-agreement.html",
+    "url": "https://www.live2d.com/eula/live2d-proprietary-software-license-agreement_en.html",
+    "sha256": "e7b4ffc6c636de2cfdd6d2eed6a4e43fa7034e7f15a0c3a15f1603dbb3b4c2b6"
+  },
+  {
+    "file": "third-party-sources/edge-tts-v1.9.1-source.tar.gz",
+    "url": "https://codeload.github.com/andresayac/edge-tts/tar.gz/93f6dbc5905293402ebf4b6dc162d31f7e61136e",
+    "sha256": "d44732b57c182bb87a75b58986cc2059aefbed83554b1d612e70c5e325dbf6c9"
+  }
+]
